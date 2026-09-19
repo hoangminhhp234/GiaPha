@@ -86,25 +86,27 @@
                   "children": [
                     {
                       "id": "id_1775444499234",
-                      "name": "Bùi Huy Hiệp (Thủy)",
-                      "info": "",
+                      "name": "Bùi Huy Hiệp",
+                      "info": "con của Thuỷ",
                       "spouses": [],
-                      "children": []
+                      "children": [],
+                      "gender": "male"
                     },
                     {
                       "id": "id_1775444656783",
-                      "name": "Bùi Thị Minh (Thủy)",
-                      "info": "",
+                      "name": "Bùi Thị Minh",
+                      "info": "con của Thuỷ",
                       "spouses": [],
                       "children": [],
                       "gender": "female"
                     },
                     {
                       "id": "id_1775444688772",
-                      "name": "Bùi Huy.... (Huế)",
-                      "info": "",
+                      "name": "Bùi Huy....",
+                      "info": "con của Huế",
                       "spouses": [],
-                      "children": []
+                      "children": [],
+                      "gender": "male"
                     }
                   ],
                   "gender": "male",
@@ -123,10 +125,11 @@
                   "children": [
                     {
                       "id": "id_1775447719364",
-                      "name": "Người mới",
+                      "name": "Quỳnh Chi",
                       "info": "",
                       "spouses": [],
-                      "children": []
+                      "children": [],
+                      "gender": "female"
                     },
                     {
                       "id": "id_1775447721140",
@@ -172,7 +175,7 @@
                   "children": [
                     {
                       "id": "id_1775444946017",
-                      "name": "Người mới",
+                      "name": "Vũ Ngọc Chi",
                       "info": "",
                       "spouses": [],
                       "children": [],
@@ -180,10 +183,11 @@
                     },
                     {
                       "id": "id_1775446658431",
-                      "name": "Người mới",
+                      "name": "Vũ Long",
                       "info": "",
                       "spouses": [],
-                      "children": []
+                      "children": [],
+                      "gender": "male"
                     }
                   ],
                   "gender": "female"
@@ -216,7 +220,8 @@
                   "info": "1987",
                   "spouses": [
                     {
-                      "name": "Bùi Thị Bích Thủy (sn1988)"
+                      "name": "Nguyễn Thị Bích Thuỷ",
+                      "img": ""
                     }
                   ],
                   "children": [
@@ -230,7 +235,7 @@
                     },
                     {
                       "id": "id_1775445066927",
-                      "name": "Kim Min Chi",
+                      "name": "Kim MinChi",
                       "info": "sn2020",
                       "spouses": [],
                       "children": [],
@@ -243,7 +248,8 @@
                       "spouses": [],
                       "children": []
                     }
-                  ]
+                  ],
+                  "gender": "male"
                 },
                 {
                   "id": "id_1775445093279",
@@ -268,23 +274,24 @@
                   "children": [
                     {
                       "id": "id_1775445168166",
-                      "name": "Đặng Vũ Khánh Vinh (Vượng)",
-                      "info": "sn2016",
+                      "name": "Đặng Vũ Khánh Vinh",
+                      "info": "sn2016, con của Vượng",
                       "spouses": [],
-                      "children": []
+                      "children": [],
+                      "gender": "male"
                     },
                     {
                       "id": "id_1775446668671",
-                      "name": "Lim Mi So (Seok)",
-                      "info": "sn2023",
+                      "name": "Lim Mi So",
+                      "info": "sn2023, con của Seok",
                       "spouses": [],
                       "children": [],
                       "gender": "female"
                     },
                     {
                       "id": "id_1775446670336",
-                      "name": "Lim Ha Yun (Seok)",
-                      "info": "sn2025",
+                      "name": "Lim Ha Yun",
+                      "info": "sn2025, con của Seok",
                       "spouses": [],
                       "children": [],
                       "gender": "female"
