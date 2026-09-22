@@ -1,813 +1,1158 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gia Phả - Bản Fix Lỗi Xem Ảnh & Crop</title>
-    <style>
-    :root { --line-color: #000000; --male-color: #3498db; --female-color: #e91e63; }
-    body { font-family: "Arial", sans-serif; background: #f8f9fa; margin: 0; padding: 20px; }
-    
-    .toolbar { position: sticky; top: 0; background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; z-index: 100; border: 1px solid #ddd; }
-    .btn-tool { padding: 8px 12px; margin-right: 8px; border-radius: 4px; cursor: pointer; border: none; font-weight: bold; color: white; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sơ Đồ Gia Tộc</title>
+<style>
+:root{--male:#3498db;--female:#e91e63;--line:#555;--bg:#f4f6f8}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;font-family:Arial,sans-serif;background:var(--bg);overflow:hidden}
+.toolbar{position:fixed;top:10px;left:10px;right:10px;z-index:1000;display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:8px 10px;background:#fff;border:1px solid #ddd;border-radius:10px;box-shadow:0 3px 14px #0002}
+.toolbar-title{font-weight:700;margin-right:5px}
+.btn-tool{border:0;color:#fff;border-radius:6px;padding:8px 11px;font-weight:700;cursor:pointer}
+.save{background:#8b5cf6}.open{background:#4b5563}.center{background:#059669}
+.zoom{position:fixed;right:14px;bottom:14px;top:auto;z-index:1000;display:flex;align-items:center;gap:4px;padding:5px;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 2px 8px #0002}
+.zoom button{width:34px;height:32px;border:0;border-radius:5px;background:#374151;color:#fff;font-size:18px;cursor:pointer}
+#zoomPct{min-width:50px;text-align:center;font-size:12px;font-weight:bold}
+#wrapper{position:absolute;inset:60px 0 0;overflow:auto;cursor:grab;background-image:radial-gradient(#dfe3e8 1px,transparent 1px);background-size:20px 20px}
+#wrapper:active{cursor:grabbing}
+#tree{position:relative;transform-origin:top left;margin:35px}
+#lines{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.family-node{position:absolute;z-index:5}
+.family-box{position:relative;display:flex;align-items:center;justify-content:center;min-width:145px;min-height:48px;padding:5px 7px;background:#fff;border:2px solid #777;border-radius:7px;box-shadow:none}
+.person-row{position:relative;min-width:130px;padding:3px 7px;text-align:center;font-size:12px;line-height:15px;font-weight:700;cursor:pointer;border-radius:4px;white-space:normal;overflow-wrap:anywhere}
+.person-years{display:block;margin-top:2px;font-size:9px;line-height:11px;font-weight:600;color:#777}
+.spouse-extra{font-size:10px;color:#666;margin-top:3px;line-height:13px}
+.person-row.male{color:#1769aa}.person-row.female{color:#c2185b}
+.person-row:hover{background:#00000008}
+.person-row+.person-row{border-left:1px solid #ddd}
+.person-row.vertical{border-left:0;border-top:1px solid #ddd}
+.family-box.vertical{
+  flex-direction:column;
+  padding:4px 7px;
+  min-width:145px;
+}
+.family-box.vertical .person-row{
+  width:100%;
+  min-height:36px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.family-box.vertical .person-row+.person-row{
+  border-left:0;
+  border-top:1px solid #ddd;
+}
+.gender-dot{font-size:9px;opacity:.65;margin-right:2px}
+.detail-modal{display:none;position:fixed;z-index:2200;left:50%;top:50%;transform:translate(-50%,-50%);width:min(760px,95vw);max-height:90vh;overflow:auto;background:#fff;border-radius:14px;box-shadow:0 20px 60px #0005;padding:18px}
+.overlay{display:none;position:fixed;inset:0;background:#0008;z-index:2100}
+.detail-head{display:flex;gap:18px;align-items:flex-start}
+.detail-main-photo{width:150px;height:150px;object-fit:cover;border-radius:10px;background:#eee;border:3px solid #ddd;cursor:pointer}
+.detail-info{flex:1}
+.detail-info h2{margin:0 0 6px;font-size:21px}
+.info-line{font-size:13px;color:#555;margin:5px 0}
+.detail-spouses{margin-top:15px;border-top:1px solid #eee;padding-top:12px}
+.spouse-grid{display:flex;gap:10px;flex-wrap:wrap}
+.spouse-card{display:flex;align-items:center;gap:8px;border:1px solid #ddd;border-radius:9px;padding:7px;min-width:210px;background:#fafafa}
+.spouse-card img{width:52px;height:52px;object-fit:cover;border-radius:7px;background:#eee}
+.spouse-card .sname{font-size:12px;font-weight:700;overflow-wrap:anywhere}
+.menu-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:16px}
+.menu-grid button,.modal-actions button{border:0;border-radius:7px;padding:10px;color:#fff;font-weight:700;cursor:pointer}
+.blue{background:#2563eb}.green{background:#059669}.purple{background:#8e44ad}.red{background:#dc2626}.gray{background:#6b7280}.orange{background:#f59e0b}
+.form-modal{display:none;position:fixed;z-index:2300;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,94vw);max-height:90vh;overflow:auto;background:#fff;border-radius:12px;padding:18px;box-shadow:0 20px 60px #0005}
+input,select{width:100%;padding:9px;margin:5px 0;border:1px solid #ccc;border-radius:6px}
+.avatar{width:95px;height:95px;object-fit:cover;border-radius:8px;background:#eee}
+.spouse-edit{display:flex;gap:6px;align-items:center;padding:6px;margin-bottom:5px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:7px}
+.spouse-edit img{width:38px;height:38px;object-fit:cover;border-radius:6px}
+.spouse-edit input{flex:1;margin:0}
+.crop-modal{display:none;position:fixed;z-index:2500;left:50%;top:50%;transform:translate(-50%,-50%);width:min(380px,94vw);background:#fff;border-radius:12px;padding:16px;text-align:center}
+#cropBox{position:relative;width:260px;height:260px;margin:10px auto;overflow:hidden;background:#111;border-radius:8px;touch-action:none;cursor:move}
+#cropImg{position:absolute;left:50%;top:50%;max-width:none;transform-origin:center;pointer-events:none;user-select:none}
+#fullPhoto{display:none;position:fixed;z-index:3000;inset:0;background:#000e;align-items:center;justify-content:center;flex-direction:column}
+#fullPhoto img{max-width:94vw;max-height:82vh;object-fit:contain}
+@media(max-width:600px){.toolbar-title{display:none}.btn-tool{font-size:11px;padding:7px 8px}.detail-head{flex-direction:column;align-items:center}.menu-grid{grid-template-columns:1fr}.family-box{min-width:135px}.person-row{min-width:120px}}
 
-    /* ===== CÂY GIA PHẢ COMPACT - LAYOUT THEO ĐỘ RỘNG NHÁNH ===== */
-    #wrapper {
-        position: relative;
-        width: 100%;
-        height: calc(100vh - 125px);
-        min-height: 500px;
-        overflow: auto;
-        cursor: grab;
-        background:
-            linear-gradient(rgba(0,0,0,.025) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0,0,0,.025) 1px, transparent 1px);
-        background-size: 20px 20px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        box-sizing: border-box;
-    }
-    #tree-container {
-        position: relative;
-        transform-origin: 0 0;
-        margin: 0;
-    }
-    .family-canvas {
-        position: relative;
-        margin: 0;
-    }
-    .family-node {
-        position: absolute;
-        box-sizing: border-box;
-        z-index: 5;
-        pointer-events: none;
-    }
-    .family-node .node-card {
-        pointer-events: auto;
-    }
-    .family-lines {
-        position: absolute;
-        left: 0;
-        top: 0;
-        overflow: visible;
-        pointer-events: none !important;
-        z-index: 1;
-    }
-    .family-lines line {
-        stroke: var(--line-color);
-        stroke-width: 2px;
-        vector-effect: non-scaling-stroke;
-    }
+button[onclick="exportFamilySVG()"]{font-weight:800}
 
-    /* Node nhỏ và đồng đều để nhiều thế hệ vẫn quan sát được */
-    .node-card {
-        border: 2px solid var(--line-color);
-        padding: 4px 5px;
-        display: block;
-        border-radius: 5px;
-        background: white;
-        width: 96px;
-        min-height: 54px;
-        cursor: pointer;
-        position: relative;
-        z-index: 10;
-        box-sizing: border-box;
-        box-shadow: 0 1px 2px rgba(0,0,0,.08);
-    }
-    .node-card:hover {
-        box-shadow: 0 3px 10px rgba(0,0,0,.16);
-        transform: translateY(-1px);
-    }
-    .node-card.male { border-color: var(--male-color); border-width: 2px; }
-    .node-card.female { border-color: var(--female-color); border-width: 2px; }
-    
-    .name {
-        font-weight: bold;
-        display: block;
-        font-size: 12px;
-        line-height: 15px;
-        margin-bottom: 1px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .info {
-        font-size: 9px;
-        color: #666;
-        display: block;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .spouse-box {
-        color: #e67e22;
-        font-size: 10px;
-        border-top: 1px dashed #ccc;
-        margin-top: 3px;
-        padding-top: 2px;
-    }
-    .spouse-item {
-        display: flex;
-        align-items: center;
-        gap: 3px;
-        margin-top: 2px;
-        max-width: 100%;
-        overflow: hidden;
-    }
-    .spouse-avatar {
-        width: 22px !important;
-        height: 22px !important;
-        border-radius: 50%;
-        object-fit: cover;
-        flex: none;
-    }
-    .spouse-item span {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        font-size: 9px;
-    }
+/* ===== KHUNG + TIÊU ĐỀ GIA PHẢ ===== */
+.genealogy-frame{
+  position:absolute;
+  left:18px;
+  top:18px;
+  right:18px;
+  bottom:18px;
+  border:3px solid #a33;
+  border-radius:4px;
+  pointer-events:none;
+  z-index:1;
+}
+.genealogy-frame:before{
+  content:"";
+  position:absolute;
+  inset:7px;
+  border:1px solid #c66;
+}
+.genealogy-header{
+  position:absolute;
+  left:50%;
+  top:38px;
+  transform:translateX(-50%);
+  z-index:2;
+  width:min(650px,60%);
+  text-align:center;
+  pointer-events:none;
+}
+.genealogy-ribbon{
+  position:relative;
+  display:inline-block;
+  min-width:420px;
+  padding:13px 55px 12px;
+  background:linear-gradient(#a51f1f,#7d1010);
+  color:#ffe7a8;
+  border:2px solid #d6a33a;
+  border-radius:8px;
+  box-shadow:none;
+  font-family:Georgia,"Times New Roman",serif;
+  font-weight:700;
+  letter-spacing:2px;
+  font-size:23px;
+}
+.genealogy-ribbon:before,
+.genealogy-ribbon:after{
+  content:"";
+  position:absolute;
+  top:7px;
+  width:48px;
+  height:39px;
+  background:#8b1515;
+  border:2px solid #d6a33a;
+  z-index:-1;
+}
+.genealogy-ribbon:before{
+  left:-25px;
+  transform:skewX(20deg);
+}
+.genealogy-ribbon:after{
+  right:-25px;
+  transform:skewX(-20deg);
+}
+.genealogy-subtitle{
+  margin-top:6px;
+  color:#8d1717;
+  font-family:Georgia,"Times New Roman",serif;
+  font-weight:700;
+  font-size:12px;
+}
+.genealogy-poem{
+  position:absolute;
+  right:48px;
+  top:55px;
+  z-index:2;
+  width:270px;
+  text-align:center;
+  color:#6e4b30;
+  font-family:"Noto Serif","Times New Roman",serif;
+  font-size:14px;
+  line-height:1.55;
+  font-style:italic;
+  pointer-events:none;
+}
+.genealogy-poem:before{
+  content:"❝";
+  display:block;
+  font-size:26px;
+  line-height:12px;
+  color:#9a6a3a;
+}
+.genealogy-corner{
+  position:absolute;
+  z-index:2;
+  color:#9a1d1d;
+  font-size:18px;
+  pointer-events:none;
+}
+.corner-tl{left:28px;top:25px}.corner-tr{right:28px;top:25px}
+.corner-bl{left:28px;bottom:25px}.corner-br{right:28px;bottom:25px}
 
-    /* MODAL CHỈNH SỬA */
-    .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; }
-    #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; z-index: 201; width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-    input, select { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-    button { cursor: pointer; border: none; border-radius: 4px; color: white; font-weight: bold; width: 100%; margin-top: 5px; padding: 8px; }
-
-    .zoom-controls {
-        position: fixed;
-        right: 18px;
-        bottom: 18px;
-        z-index: 120;
-        display: flex;
-        gap: 5px;
-        background: white;
-        padding: 5px;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,.15);
-    }
-    .btn-zoom {
-        width: 36px;
-        height: 34px;
-        margin: 0;
-        padding: 0;
-        background: #374151;
-        font-size: 18px;
-    }
-    @media (max-width: 700px) {
-        body { padding: 8px; }
-        #wrapper { height: calc(100vh - 95px); }
-        .node-card { width: 88px; }
-        .family-node { width: 88px !important; }
-        .spouse-add-row .spouse-add-btn {
-            flex-basis: 40px;
-            width: 40px;
-        }
-    }
-
-
-    /* ===== Ô THÊM VỢ/CHỒNG GỌN VÀ CÂN ĐỐI ===== */
-    .spouse-add-row {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        width: 100%;
-        box-sizing: border-box;
-    }
-    .spouse-add-row input#new-spouse-name {
-        flex: 1 1 auto;
-        min-width: 0;
-        width: auto;
-        margin: 0;
-        height: 36px;
-        padding: 7px 9px;
-        box-sizing: border-box;
-    }
-    .spouse-add-row .spouse-add-btn {
-        flex: 0 0 42px;
-        width: 42px;
-        height: 36px;
-        margin: 0;
-        padding: 0;
-        background: #f59e0b;
-        font-size: 20px;
-        line-height: 36px;
-        text-align: center;
-        border-radius: 5px;
-    }
-
-    /* Tên trên node: ưu tiên tên gọi cuối khi màn hình/cây quá nhỏ */
-    /* Trên cây luôn ưu tiên tên gọi cuối.
-       Họ tên đầy đủ vẫn được lưu trong node.name và hiện trong menu thông tin. */
-    .node-name-full {
-        display: none;
-    }
-    .node-name-short {
-        display: inline;
-    }
-
-    /* ===== MODAL: CHỈ HIỆN SAU KHI BẤM THÀNH VIÊN ===== */
-
-    .modal-box {
-        display: none;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: white;
-        padding: 20px;
-        border-radius: 8px;
-        z-index: 201;
-        width: 300px;
-        max-width: calc(100vw - 30px);
-        max-height: calc(100vh - 30px);
-        overflow-y: auto;
-        box-shadow: 0 10px 25px rgba(0,0,0,.2);
-        box-sizing: border-box;
-    }
-    #overlay {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,.5);
-        z-index: 200;
-    }
-    #full-photo-view {
-        display: none;
-        position: fixed;
-        inset: 0;
-        z-index: 300;
-        background: rgba(0,0,0,.9);
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-    }
-    #full-photo-view img {
-        max-width: 90vw;
-        max-height: 85vh;
-        object-fit: contain;
-    }
-    .btn-close-photo {
-        margin-top: 15px;
-        background: white;
-        color: #111;
-        padding: 8px 18px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-weight: bold;
-    }
+@media(max-width:900px){
+  .genealogy-header{width:70%;top:32px}
+  .genealogy-ribbon{min-width:300px;padding:10px 35px;font-size:18px}
+  .genealogy-poem{right:35px;top:105px;width:220px;font-size:11px}
+}
+@media(max-width:600px){
+  .genealogy-frame{left:10px;right:10px;top:10px;bottom:10px}
+  .genealogy-header{top:28px;width:80%}
+  .genealogy-ribbon{min-width:220px;padding:8px 20px;font-size:14px;letter-spacing:1px}
+  .genealogy-subtitle{font-size:9px}
+  .genealogy-poem{right:20px;top:86px;width:155px;font-size:9px;line-height:1.35}
+}
 
 
-    #tree-container.compact-names .node-name-full {
-        display: none;
-    }
-    #tree-container.compact-names .node-name-short {
-        display: inline;
-    }
-
-    /* ===== ZOOM NHỎ: CHỈ GIỮ TÊN GỌI ===== */
-    #tree-container.compact-names .node-card {
-        min-height: 30px;
-        height: 30px;
-        padding: 5px 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    #tree-container.compact-names .node-card .avatar,
-    #tree-container.compact-names .node-card .info,
-    #tree-container.compact-names .node-card .spouse-item,
-    #tree-container.compact-names .node-card .spouse-box {
-        display: none !important;
-    }
-
-    #tree-container.compact-names .node-card .name {
-        display: block;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-        font-size: 12px;
-        line-height: 18px;
-        text-align: center;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
+/* ===== CHẾ ĐỘ XUẤT PNG SẠCH ===== */
+#pngExportStage,
+#pngExportStage *{
+  box-shadow:none !important;
+  filter:none !important;
+  text-shadow:none !important;
+  animation:none !important;
+  transition:none !important;
+}
 
 </style>
 </head>
 <body>
 
 <div class="toolbar">
-    <button class="btn-tool" style="background:#8b5cf6" onclick="exportToJson()">💾 Lưu JSON</button>
-    <button class="btn-tool" style="background:#4b5563" onclick="document.getElementById('import-file').click()">📂 Mở File</button>
-    <input type="file" id="import-file" accept=".json" onchange="importFromJson(event)" style="display:none">
+  <span class="toolbar-title">🌳 GIA PHẢ</span>
+  <button class="btn-tool save" onclick="exportJSON()">💾 Lưu JSON</button>
+  <button class="btn-tool open" onclick="document.getElementById('fileInput').click()">📂 Mở JSON</button>
+  <button class="btn-tool center" onclick="centerTree()">🎯 Về giữa</button>
+  <button class="btn-tool" style="background:#0ea5e9" onclick="exportFamilyImage()">🖼️ Xuất PNG</button>
+  <button class="btn-tool" style="background:#0891b2" onclick="exportFamilySVG()">📐 Xuất SVG/Corel</button>
+  <input id="fileInput" type="file" accept=".json,application/json" style="display:none" onchange="importJSON(event)">
 </div>
 
-<div class="zoom-controls">
-    <button class="btn-zoom" onclick="changeZoom(0.1)">+</button>
-    <button class="btn-zoom" onclick="changeZoom(-0.1)">-</button>
-    <button class="btn-zoom" style="font-size: 14px;" onclick="resetZoom()">1:1</button>
+<div class="zoom">
+  <button onclick="zoomBy(.1)">+</button>
+  <span id="zoomPct">100%</span>
+  <button onclick="zoomBy(-.1)">−</button>
+  <button onclick="resetZoom()" style="font-size:12px">1:1</button>
 </div>
 
-<div id="wrapper">
-    <div class="tree" id="tree-container"></div>
-</div>
+<div id="wrapper"><div id="tree"><svg id="lines"></svg></div></div>
 
-<div class="overlay" id="overlay" onclick="closeAllModals()"></div>
+<div id="overlay" class="overlay" onclick="closeAll()"></div>
 
-<div id="modal-edit" class="modal-box" onclick="event.stopPropagation()">
-    <h3 style="margin-top:0; text-align: center;">Thông tin thành viên</h3>
-    <div style="text-align:center">
-        <img id="preview-img" src="" class="avatar" style="width:90px; height:90px; cursor:pointer; border:2px solid #3b82f6" onclick="openFullView(this.src)">
-        <p style="font-size:10px; color:#666; margin:2px 0;">(Bấm vào ảnh để phóng to)</p>
-        <label style="display:inline-block; font-size: 11px; color: #3b82f6; cursor: pointer; text-decoration: underline; margin-bottom: 10px;">
-            Đổi ảnh đại diện
-            <input type="file" accept="image/*" style="display:none" onchange="initCropProcess(event, 'member')">
-        </label>
+<!-- THÔNG BÁO GIA PHẢ -->
+<div id="noticeOverlay" class="overlay" style="display:none;z-index:4000"></div>
+<div id="noticeModal" class="detail-modal" style="display:none;z-index:4100;max-width:520px">
+  <div style="text-align:center">
+    <div style="font-size:38px;margin-bottom:8px">🌳</div>
+    <h3 style="margin:0 0 12px;color:#7c3aed">Thông báo</h3>
+    <div style="font-size:15px;line-height:1.65;color:#374151;text-align:left">
+      Nội dung Gia phả có thể còn thiếu, hoặc chưa chính xác. Mọi người vui lòng hoan hỉ bỏ qua!
+      <br><br>
+      Thông tin cần bổ sung hoặc đính chính, xin gửi về zalo cháu Vượng
+      <strong>0971282336</strong>
     </div>
-
-    <input type="text" id="m-name" placeholder="Họ và tên" title="Họ và tên đầy đủ">
-    <select id="m-gender"><option value="male">Nam</option><option value="female">Nữ</option></select>
-    <input type="text" id="m-info" placeholder="Ngày sinh / Thông tin">
-    
-    <div style="margin-top:10px; border-top: 1px solid #eee; padding-top:10px;">
-        <p style="font-size:0.8em; font-weight:bold; margin:0 0 5px 0;">Vợ / Chồng:</p>
-        <div id="spouse-list-ui"></div>
-        <div class="spouse-add-row">
-            <input type="text" id="new-spouse-name" placeholder="Tên phối ngẫu">
-            <button class="spouse-add-btn" onclick="addSpouseAction()" title="Thêm vợ/chồng">+</button>
-        </div>
-    </div>
-    <hr>
-<button style="background:#8e44ad; width:100%; padding:8px; margin-bottom:5px;" onclick="addParentAction()">
-    ⬆️ Thêm Bố/Mẹ (Tạo thế hệ tiền bối)
-</button>
-    <button style="background:#059669; width:100%; padding:10px" onclick="addChildAction()">+ Thêm Con</button>
-    <button style="background:#2563eb; width:100%; padding:12px; margin-top:8px" onclick="saveChanges()">LƯU LẠI</button>
-    <button style="background:#dc2626; width:100%; padding:5px; margin-top:10px; font-size:0.7em" onclick="deleteNodeAction()">Xóa người này</button>
+    <button class="blue" style="border:0;color:#fff;border-radius:7px;padding:10px 28px;margin-top:18px;cursor:pointer" onclick="closeNotice()">Đã hiểu</button>
+  </div>
 </div>
 
-<div id="modal-crop" class="modal-box" style="width:300px; text-align:center;" onclick="event.stopPropagation()">
-    <h3 id="crop-title" style="margin:0; font-size: 1em;">Cắt ảnh</h3>
-    <div id="crop-container" onpointerdown="startDraggingCrop(event)">
-        <img id="crop-img" src="">
-        <div class="crop-mask"></div>
-    </div>
-    <input type="range" id="crop-zoom" min="0.1" max="4" step="0.01" value="1" oninput="applyCropTransform()">
-    <div style="display:flex; gap:10px; margin-top:10px;">
-        <button style="background:#6b7280; flex:1; padding:10px" onclick="closeCrop()">Hủy</button>
-        <button style="background:#10b981; flex:1; padding:10px" onclick="finishCrop()">Xác nhận</button>
-    </div>
+<!-- CHI TIẾT -->
+<div id="detailModal" class="detail-modal">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <h3 style="margin:0">👤 Chi tiết thành viên</h3>
+    <button class="gray" style="border:0;color:#fff;border-radius:6px;padding:7px 11px;cursor:pointer" onclick="closeAll()">Đóng</button>
+  </div>
+  <div id="detailContent" style="margin-top:14px"></div>
 </div>
 
-<div id="full-photo-view">
-    <img id="full-img-src" src="">
-    <div class="btn-close-photo" onclick="closeFullView()">ĐÓNG LẠI</div>
+<!-- CHỈNH SỬA -->
+<div id="editModal" class="form-modal">
+  <h3 style="margin-top:0;text-align:center">Thông tin thành viên</h3>
+  <div style="text-align:center">
+    <img id="preview" class="avatar" onclick="full(this.src)">
+    <div style="font-size:10px;color:#777">Bấm ảnh để xem lớn</div>
+    <label style="font-size:12px;color:#2563eb;cursor:pointer;text-decoration:underline">
+      📷 Đổi ảnh
+      <input type="file" accept="image/*" style="display:none" onchange="startCrop(event,'member')">
+    </label>
+  </div>
+  <label style="font-size:12px">Họ và tên</label>
+  <input id="nameInput" placeholder="Họ và tên">
+  <label style="font-size:12px">Giới tính</label>
+  <select id="genderInput"><option value="male">Nam</option><option value="female">Nữ</option></select>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+    <div>
+      <label style="font-size:12px">Năm sinh</label>
+      <input id="birthInput" inputmode="numeric" maxlength="4" placeholder="VD: 1991">
+    </div>
+    <div>
+      <label style="font-size:12px">Năm mất</label>
+      <input id="deathInput" inputmode="numeric" maxlength="4" placeholder="VD: 2030">
+    </div>
+  </div>
+  <label style="font-size:12px">Thông tin</label>
+  <input id="infoInput" placeholder="Ngày sinh / thông tin">
+  <div style="margin-top:12px;border-top:1px solid #eee;padding-top:10px">
+    <b style="font-size:13px">💑 Vợ / Chồng</b>
+    <div id="spouseEditList" style="margin-top:7px"></div>
+    <div style="display:flex;gap:5px">
+      <input id="newSpouse" placeholder="Tên vợ / chồng" style="margin:0">
+      <button class="orange" style="width:45px;border:0;border-radius:6px;color:#fff;font-weight:bold" onclick="addSpouse()">+</button>
+    </div>
+  </div>
+  <div class="modal-actions" style="display:grid;gap:6px;margin-top:12px">
+    <button class="purple" onclick="addParent()">⬆️ Thêm Bố / Mẹ</button>
+    <button class="green" onclick="addChild()">👶 Thêm Con</button>
+    <button class="blue" onclick="saveEdit()">💾 LƯU LẠI</button>
+    <button class="red" onclick="deletePerson()">🗑 Xóa người này</button>
+    <button class="gray" onclick="closeAll()">Đóng</button>
+  </div>
+</div>
+
+<!-- CROP -->
+<div id="cropModal" class="crop-modal">
+  <h3 style="margin:0">✂️ Cắt ảnh</h3>
+  <div id="cropBox"><img id="cropImg"></div>
+  <input id="cropZoom" type="range" min=".1" max="4" step=".01" value="1" oninput="applyCrop()">
+  <div style="display:flex;gap:8px">
+    <button class="gray" style="flex:1;border:0;border-radius:6px;color:#fff;padding:9px" onclick="closeCrop()">Hủy</button>
+    <button class="green" style="flex:1;border:0;border-radius:6px;color:#fff;padding:9px" onclick="finishCrop()">Xác nhận</button>
+  </div>
+</div>
+
+<div id="fullPhoto">
+  <img id="fullImg">
+  <button class="red" style="width:auto;margin-top:14px;border:0;border-radius:6px;padding:9px 18px;color:#fff" onclick="closeFull()">Đóng</button>
 </div>
 
 <script>
-    let familyData = null;
-    let activeId = null;
-    let currentZoom = 1;
-    let targetCropType = 'member'; // 'member' hoặc index phối ngẫu
+const STORAGE_KEY="giapha_v7_fixed";
+let familyData=null, activeId=null, zoom=1;
+let cropType="member", crop={x:0,y:0,scale:1,down:false,sx:0,sy:0};
 
-    // ===== ZOOM + KÉO CÂY =====
-    const wrapper = document.getElementById('wrapper');
-    let isDraggingTree = false, dragStart = { x: 0, y: 0, sL: 0, sT: 0 };
+const tree=document.getElementById("tree"), wrapper=document.getElementById("wrapper");
 
-    wrapper.onmousedown = (e) => {
-        if (e.target.closest('.node-card, .toolbar, .zoom-controls, button, input, select, .modal-box')) return;
-        isDraggingTree = true;
-        wrapper.style.cursor = 'grabbing';
-        dragStart = { x: e.pageX, y: e.pageY, sL: wrapper.scrollLeft, sT: wrapper.scrollTop };
-    };
-    window.onmousemove = (e) => {
-        if (!isDraggingTree) return;
-        wrapper.scrollLeft = dragStart.sL - (e.pageX - dragStart.x);
-        wrapper.scrollTop = dragStart.sT - (e.pageY - dragStart.y);
-    };
-    window.onmouseup = () => {
-        isDraggingTree = false;
-        wrapper.style.cursor = 'grab';
-    };
-
-    function applyZoom() {
-        const tree = document.getElementById('tree-container');
-        tree.style.transform = `scale(${currentZoom})`;
-        tree.style.transformOrigin = '0 0';
-
-        // Khi zoom <= 65% chỉ thu gọn thêm ảnh/thông tin/vợ chồng.
-        tree.classList.toggle('compact-names', currentZoom <= 0.65);
-    }
-    function changeZoom(v) {
-        currentZoom = Math.max(0.2, Math.min(3, +(currentZoom + v).toFixed(2)));
-        applyZoom();
-    }
-    function resetZoom() {
-        currentZoom = 1;
-        applyZoom();
-    }
-
-    // --- CROP LOGIC (FIXED) ---
-    let cropState = { active: false, x: 0, y: 0, scale: 1, lastX: 0, lastY: 0 };
-	// 1. Thêm hàm tạo Bố/Mẹ đè lên trên Gốc (Root)
-function addParentAction() {
-    const parentName = prompt("Nhập tên Bố/Mẹ của người này:");
-    if (!parentName) return;
-
-    // Tạo Cụ Thủy Tổ mới
-    const newRoot = {
-        id: "id_" + Date.now(),
-        name: parentName,
-        gender: "male",
-        info: "Đời Tiền Bối",
-        spouses: [],
-        children: [ familyData ] // Đưa toàn bộ cây hiện tại làm con của người này
-    };
-
-    // Cập nhật lại gốc gia phả
-    familyData = newRoot;
-    render();
-    closeModal();
+function uid(){return "id_"+Date.now()+"_"+Math.floor(Math.random()*100000)}
+function placeholder(name){
+  const c=(name||"?").trim().charAt(0).toUpperCase();
+  return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="100%" height="100%" fill="#e5e7eb"/><text x="50%" y="54%" text-anchor="middle" font-family="Arial" font-size="70" fill="#6b7280">${c}</text></svg>`
+  );
 }
-    function initCropProcess(event, type) {
-        const file = event.target.files[0]; if (!file) return;
-        targetCropType = type;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = document.getElementById('crop-img');
-            img.src = e.target.result;
-            img.onload = () => {
-                cropState = { active: false, x: 0, y: 0, scale: 1, lastX: 0, lastY: 0 };
-                document.getElementById('crop-zoom').value = 1;
-                applyCropTransform();
-                document.getElementById('modal-crop').style.display = 'block';
-                document.getElementById('overlay').style.display = 'block';
-            };
-        };
-        reader.readAsDataURL(file);
-    }
+function normalize(n){
+  if(!n)return;
+  n.id=n.id||uid();
+  n.name=n.name||"Người chưa đặt tên";
+  n.gender=n.gender||"male";
+  n.info=n.info||"";
+  n.birthYear=n.birthYear||"";
+  n.deathYear=n.deathYear||"";
+  n.img=n.img||"";
+  n.spouses=Array.isArray(n.spouses)?n.spouses:[];
+  n.children=Array.isArray(n.children)?n.children:[];
+  n.spouses=n.spouses.map(s=>{
+    if(typeof s==="string")s={name:s};
+    s.name=s.name||"Phối ngẫu";
+    s.gender=s.gender||(n.gender==="female"?"male":"female");
+    s.info=s.info||"";
+    s.birthYear=s.birthYear||"";
+    s.deathYear=s.deathYear||"";
+    s.img=s.img||"";
+    return s;
+  });
+  n.children.forEach(normalize);
+}
+function yearText(person){
+  const b=String(person.birthYear||"").trim();
+  const d=String(person.deathYear||"").trim();
+  if(b&&d)return b+"-"+d;
+  if(b)return "sn"+b;
+  if(d)return "mn"+d;
+  return "";
+}
 
-    function startDraggingCrop(e) {
-        cropState.active = true;
-        cropState.lastX = e.clientX - cropState.x;
-        cropState.lastY = e.clientY - cropState.y;
-        document.addEventListener('pointermove', moveDraggingCrop);
-        document.addEventListener('pointerup', stopDraggingCrop);
-        e.preventDefault();
-    }
+function find(n,id){if(!n)return null;if(n.id===id)return n;for(const c of n.children||[]){const f=find(c,id);if(f)return f}return null}
+function parentOf(n,id,p=null){if(!n)return null;if(n.id===id)return p;for(const c of n.children||[]){const f=parentOf(c,id,n);if(f)return f}return null}
 
-    function moveDraggingCrop(e) {
-        if (!cropState.active) return;
-        cropState.x = e.clientX - cropState.lastX;
-        cropState.y = e.clientY - cropState.lastY;
-        applyCropTransform();
-    }
+function boxMode(n){
+  // Luôn xếp người chính và toàn bộ vợ/chồng theo chiều dọc.
+  // Người chính ở trên, từng vợ/chồng xếp lần lượt bên dưới.
+  return "vertical";
+}
+function boxSize(n){
+  const vertical=true; // Luôn xếp người chính và vợ/chồng trên - dưới.
+  const count=1+(n.spouses||[]).length;
+  const w=145;
+  const rowH=36;
+  return vertical
+    ? {w,h:count*rowH+10+(count-1)}
+    : {w:w*count,h:48};
+}
+function subtreeW(n){
+  const g=boxSize(n);
+  if(!n.children.length)return g.w;
+  const cw=n.children.map(subtreeW).reduce((a,b)=>a+b,0)+(n.children.length-1)*22;
+  return Math.max(g.w,cw);
+}
 
-    function stopDraggingCrop() {
-        cropState.active = false;
-        document.removeEventListener('pointermove', moveDraggingCrop);
-        document.removeEventListener('pointerup', stopDraggingCrop);
-    }
+const pos=new Map();
+let totalW=0,totalH=0;
+function layout(){
+  pos.clear();
+  if(!familyData)return;
 
-    function applyCropTransform() {
-        cropState.scale = document.getElementById('crop-zoom').value;
-        document.getElementById('crop-img').style.transform = `translate(${cropState.x}px, ${cropState.y}px) scale(${cropState.scale})`;
-    }
+  // Compact tree an toàn:
+  // - Đóng gói các subtree theo contour ở từng tầng.
+  // - Không dịch các con sau khi đã đóng gói (đây là nguyên nhân gây chồng ô ở v21).
+  // - Thay vào đó, đặt ô cha vào chính giữa nhóm con.
+  // - Vì contour của toàn subtree được giữ nguyên sau khi căn cha nên các nhánh
+  //   anh/chị/em ở cấp trên vẫn được collision-check chính xác.
+  const LEVEL_GAP=58;
+  const SIBLING_GAP=16;
+  const SIDE_PAD=55;
+  const TOP_Y=230;
 
-    function finishCrop() {
-        const canvas = document.createElement('canvas'); canvas.width = 300; canvas.height = 300;
-        const ctx = canvas.getContext('2d');
-        const img = document.getElementById('crop-img');
-        const ratio = 300 / 180;
-        const offset = (250 - 180) / 2;
-        ctx.drawImage(img, (cropState.x - offset) * ratio, (cropState.y - offset) * ratio, img.width * cropState.scale * ratio, img.height * cropState.scale * ratio);
-        const b64 = canvas.toDataURL('image/jpeg', 0.8);
-        const node = findNode(familyData, activeId);
-        if (targetCropType === 'member') {
-            node.img = b64; document.getElementById('preview-img').src = b64;
-        } else {
-            node.spouses[targetCropType].img = b64; refreshSpouseUI(node);
-        }
-        closeCrop();
-    }
+  const levels=[];
+  function measure(n,d){
+    const g=boxSize(n);
+    levels[d]=Math.max(levels[d]||0,g.h);
+    (n.children||[]).forEach(c=>measure(c,d+1));
+  }
+  measure(familyData,0);
 
-    // --- FULL VIEW LOGIC (FIXED) ---
-    function openFullView(src) {
-        if (!src || src.includes('placeholder')) return;
-        document.getElementById('full-img-src').src = src;
-        document.getElementById('full-photo-view').style.display = 'flex';
-    }
-    function closeFullView() { document.getElementById('full-photo-view').style.display = 'none'; }
+  const ys=[];
+  let yy=TOP_Y;
+  levels.forEach((h,i)=>{
+    ys[i]=yy;
+    yy+=h+LEVEL_GAP;
+  });
+  totalH=yy+60;
 
-    // --- DATA & RENDER ---
-    async function initData() {
-        const local = localStorage.getItem('giapha_v7_fixed');
-        if (local) { familyData = JSON.parse(local); render(); }
-        else {
-            familyData = { id: "root", name: "Cụ Tổ", gender: "male", info: "Đời 1", img: "", spouses: [], children: [] };
-            render();
-        }
-    }
-
-    // ===== RENDER CÂY GIA PHẢ COMPACT =====
-    // Tính độ rộng thật của từng nhánh rồi đặt node cha vào đúng tâm
-    // của cụm con. Nhánh ít người sẽ không chiếm khoảng trống của nhánh khác.
-
-    const LAYOUT = {
-        nodeW: 96,
-        nodeH: 58,
-        gapX: 12,
-        gapY: 64,
-        sidePad: 24,
-        topPad: 24
+  // contour[d] là biên trái/phải của toàn subtree ở độ sâu d,
+  // tính từ tâm của node gốc của subtree.
+  function makeTree(n){
+    const g=boxSize(n);
+    const node={
+      n,
+      w:g.w,
+      h:g.h,
+      cx:0,
+      children:[],
+      contour:[{left:-g.w/2,right:g.w/2}]
     };
 
-    function getNodeHeight(node) {
-        const spouses = node.spouses || [];
-        return LAYOUT.nodeH + Math.min(spouses.length, 3) * 24;
-    }
+    const kids=(n.children||[]).map(makeTree);
+    node.children=kids;
+    if(!kids.length)return node;
 
-    function getSubtreeWidth(node) {
-        const children = node.children || [];
-        if (!children.length) return LAYOUT.nodeW;
+    // Đặt các subtree con lần lượt từ trái sang phải.
+    // cx của mỗi child là tâm tương đối của child.
+    let previousRight=null;
+    for(const child of kids){
+      let desired=child.w/2;
 
-        let total = 0;
-        children.forEach((child, i) => {
-            total += getSubtreeWidth(child);
-            if (i < children.length - 1) total += LAYOUT.gapX;
-        });
-        return Math.max(LAYOUT.nodeW, total);
-    }
-
-    function getTreeHeight(node) {
-        const children = node.children || [];
-        if (!children.length) return getNodeHeight(node);
-
-        let maxChild = 0;
-        children.forEach(c => {
-            maxChild = Math.max(maxChild, getTreeHeight(c));
-        });
-        return getNodeHeight(node) + LAYOUT.gapY + maxChild;
-    }
-
-    function layoutTree(node, left, top, lines, positions) {
-        const subtreeW = getSubtreeWidth(node);
-        const nodeW = LAYOUT.nodeW;
-        const nodeH = getNodeHeight(node);
-        const children = node.children || [];
-
-        if (!children.length) {
-            const x = left + (subtreeW - nodeW) / 2;
-            positions.set(node.id, { x, y: top, w: nodeW, h: nodeH });
-            return;
+      if(previousRight===null){
+        child.cx=desired;
+      }else{
+        // So sánh contour với tất cả các độ sâu giao nhau.
+        let shift=desired;
+        for(const prev of kids.slice(0,kids.indexOf(child))){
+          const maxDepth=Math.min(prev.contour.length,child.contour.length);
+          for(let d=0;d<maxDepth;d++){
+            const need=
+              (prev.cx+prev.contour[d].right)+SIBLING_GAP-
+              child.contour[d].left;
+            if(need>shift)shift=need;
+          }
         }
+        child.cx=shift;
+      }
+      previousRight=child.cx+child.contour[0].right;
+    }
 
-        let childrenTotal = 0;
-        children.forEach((child, i) => {
-            childrenTotal += getSubtreeWidth(child);
-            if (i < children.length - 1) childrenTotal += LAYOUT.gapX;
-        });
+    // Đưa nhóm con sao cho tâm nhóm nằm tại 0 = tâm node cha.
+    const groupLeft=kids[0].cx+kids[0].contour[0].left;
+    const groupRight=kids[kids.length-1].cx+kids[kids.length-1].contour[0].right;
+    const groupCenter=(groupLeft+groupRight)/2;
 
-        let childLeft = left + (subtreeW - childrenTotal) / 2;
-        const childTop = top + nodeH + LAYOUT.gapY;
+    // QUAN TRỌNG: không dịch children.
+    // Đặt node cha ở giữa nhóm con bằng cách thay cx của node cha.
+    node.cx=groupCenter;
 
-        children.forEach(child => {
-            const cw = getSubtreeWidth(child);
-            layoutTree(child, childLeft, childTop, lines, positions);
-            childLeft += cw + LAYOUT.gapX;
-        });
-
-        const first = positions.get(children[0].id);
-        const last = positions.get(children[children.length - 1].id);
-
-        const center =
-            ((first.x + first.w / 2) + (last.x + last.w / 2)) / 2;
-
-        const x = center - nodeW / 2;
-        positions.set(node.id, { x, y: top, w: nodeW, h: nodeH });
-
-        const parentX = x + nodeW / 2;
-        const parentBottom = top + nodeH;
-        const junctionY = parentBottom + LAYOUT.gapY / 2;
-
-        lines.push({
-            x1: parentX, y1: parentBottom,
-            x2: parentX, y2: junctionY
-        });
-
-        const firstCenter = first.x + first.w / 2;
-        const lastCenter = last.x + last.w / 2;
-
-        if (children.length > 1) {
-            lines.push({
-                x1: firstCenter, y1: junctionY,
-                x2: lastCenter, y2: junctionY
-            });
+    // Contour của subtree tính theo tâm node cha.
+    const contour=[{left:node.cx-g.w/2,right:node.cx+g.w/2}];
+    for(const child of kids){
+      for(let d=0;d<child.contour.length;d++){
+        const L=child.cx+child.contour[d].left;
+        const R=child.cx+child.contour[d].right;
+        const idx=d+1;
+        if(!contour[idx])contour[idx]={left:L,right:R};
+        else{
+          contour[idx].left=Math.min(contour[idx].left,L);
+          contour[idx].right=Math.max(contour[idx].right,R);
         }
-
-        children.forEach(child => {
-            const p = positions.get(child.id);
-            const cx = p.x + p.w / 2;
-            lines.push({
-                x1: cx, y1: junctionY,
-                x2: cx, y2: p.y
-            });
-        });
+      }
     }
 
-    function createSvgLines(width, height, lines) {
-        const svgNS = 'http://www.w3.org/2000/svg';
-        const svg = document.createElementNS(svgNS, 'svg');
-        svg.setAttribute('class', 'family-lines');
-        svg.setAttribute('width', width);
-        svg.setAttribute('height', height);
-        svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    // Chuẩn hóa contour về tâm thực của node cha.
+    for(const c of contour){
+      c.left-=node.cx;
+      c.right-=node.cx;
+    }
+    node.contour=contour;
 
-        lines.forEach(l => {
-            const line = document.createElementNS(svgNS, 'line');
-            line.setAttribute('x1', l.x1);
-            line.setAttribute('y1', l.y1);
-            line.setAttribute('x2', l.x2);
-            line.setAttribute('y2', l.y2);
-            svg.appendChild(line);
-        });
+    // Đồng thời chuẩn hóa tâm các con theo node cha.
+    kids.forEach(k=>k.cx-=node.cx);
+    node.cx=0;
+    return node;
+  }
 
-        return svg;
+  const root=makeTree(familyData);
+
+  // Sau makeTree, root.cx = 0 và mọi child.cx là tương đối với root.
+  const minX=root.contour.reduce((m,c)=>Math.min(m,c.left),0);
+  const maxX=root.contour.reduce((m,c)=>Math.max(m,c.right),0);
+  const shiftX=SIDE_PAD-minX;
+  totalW=Math.ceil(maxX-minX+SIDE_PAD*2);
+
+  function write(t,d,parentAbsCx){
+    const absCx=parentAbsCx+t.cx;
+    const x=absCx-t.w/2+shiftX;
+    const y=ys[d];
+    pos.set(t.n.id,{
+      x,y,w:t.w,h:t.h,
+      cx:x+t.w/2,
+      bottom:y+t.h
+    });
+    t.children.forEach(c=>write(c,d+1,absCx));
+  }
+  write(root,0,0);
+}
+
+function personRow(person,id){
+  const row=document.createElement("div");
+  row.className="person-row "+(person.gender==="female"?"female":"male");
+  const years=yearText(person);
+  row.innerHTML=`<span class="gender-dot">${person.gender==="female"?"♀":"♂"}</span>${escapeHtml(person.name)}${years?`<span class="person-years">${escapeHtml(years)}</span>`:""}`;
+  row.onclick=e=>{e.stopPropagation();openDetail(id)};
+  return row;
+}
+
+
+function addGenealogyDecor(){
+  const frame=document.createElement("div");
+  frame.className="genealogy-frame";
+  tree.appendChild(frame);
+
+  const header=document.createElement("div");
+  header.className="genealogy-header";
+  header.innerHTML=`
+    <div class="genealogy-ribbon">SƠ ĐỒ GIA TỘC</div>
+    <div class="genealogy-subtitle">Cội nguồn • Gia tộc • Tổ tiên</div>`;
+  tree.appendChild(header);
+
+  const poem=document.createElement("div");
+  poem.className="genealogy-poem";
+  poem.innerHTML=`Con người có tổ có tông<br>Như cây có cội, như sông có nguồn`;
+  tree.appendChild(poem);
+
+  [
+    ["corner-tl","✦"],
+    ["corner-tr","✦"],
+    ["corner-bl","✦"],
+    ["corner-br","✦"]
+  ].forEach(([cls,s])=>{
+    const c=document.createElement("div");
+    c.className="genealogy-corner "+cls;
+    c.textContent=s;
+    tree.appendChild(c);
+  });
+}
+
+function render(){
+  normalize(familyData); layout();
+  const svg=document.getElementById("lines");
+  tree.innerHTML=""; tree.appendChild(svg);
+  addGenealogyDecor();
+  tree.style.width=totalW+"px"; tree.style.height=totalH+"px";
+  svg.setAttribute("width",totalW);svg.setAttribute("height",totalH);
+  const frag=document.createDocumentFragment();
+  function drawNode(n){
+    const p=pos.get(n.id),wrap=document.createElement("div"),box=document.createElement("div");
+    wrap.className="family-node";wrap.style.left=p.x+"px";wrap.style.top=p.y+"px";wrap.style.width=p.w+"px";wrap.style.height=p.h+"px";
+    box.className="family-box "+(boxMode(n)==="vertical"?"vertical":"");
+    box.appendChild(personRow(n,n.id));
+    (n.spouses||[]).forEach((s,i)=>{
+      const id=n.id+"::spouse::"+i;
+      box.appendChild(personRow(s,id));
+    });
+    wrap.appendChild(box);frag.appendChild(wrap);
+    n.children.forEach(drawNode);
+  }
+  drawNode(familyData);tree.appendChild(frag);
+  drawLines();
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(familyData))}catch(e){}
+}
+function drawLines(){
+  const svg=document.getElementById("lines");svg.innerHTML="";
+  function line(x1,y1,x2,y2){
+    const l=document.createElementNS("http://www.w3.org/2000/svg","line");
+    l.setAttribute("x1",x1);l.setAttribute("y1",y1);l.setAttribute("x2",x2);l.setAttribute("y2",y2);
+    l.setAttribute("stroke","#555");l.setAttribute("stroke-width","2");l.setAttribute("stroke-linecap","square");svg.appendChild(l);
+  }
+  function rec(n){
+    if(!n.children.length)return;
+    const p=pos.get(n.id);
+    const cs=n.children.map(c=>pos.get(c.id));
+    if(!p||!cs.length)return;
+    const childTop=Math.min(...cs.map(x=>x.y));
+    const drop=18;
+    const busY=Math.min(childTop-18,p.bottom+drop);
+    // Luôn nối từ chính giữa đáy ô gia đình xuống thanh phân nhánh.
+    line(p.cx,p.bottom,p.cx,busY);
+    if(cs.length===1){
+      line(cs[0].cx,busY,cs[0].cx,cs[0].y);
+    }else{
+      const minX=Math.min(...cs.map(x=>x.cx));
+      const maxX=Math.max(...cs.map(x=>x.cx));
+      line(minX,busY,maxX,busY);
+      cs.forEach(c=>line(c.cx,busY,c.cx,c.y));
+    }
+    n.children.forEach(rec);
+  }
+  rec(familyData);
+}
+function openDetail(id){
+  if(id.includes("::spouse::")){
+    const [base,raw]=id.split("::spouse::");
+    const i=Number(raw);
+    const owner=find(familyData,base);
+    if(owner&&owner.spouses[i]){
+      showDetail(owner.spouses[i],owner);
+    }
+    return;
+  }
+  const n=find(familyData,id);
+  if(!n)return;
+  activeId=id;
+  showDetail(n,n);
+}
+function relationText(person,owner){
+  if(person===owner)return "";
+  if(person.gender==="female")return "Vợ của "+owner.name;
+  return "Chồng của "+owner.name;
+}
+function showDetail(person,owner){
+  activeId=person===owner?owner.id:null;
+  const spouses=owner.spouses||[];
+  const years=yearText(person);
+  const relation=relationText(person,owner);
+  const html=`
+    <div class="detail-head">
+      <img class="detail-main-photo" src="${person.img||placeholder(person.name)}" onclick="${person.img?"full(this.src)":""}">
+      <div class="detail-info">
+        <h2>${escapeHtml(person.name)}</h2>
+        <div class="info-line"><b>Giới tính:</b> ${person.gender==="female"?"Nữ":"Nam"}</div>
+        ${years?`<div class="info-line"><b>Năm:</b> ${escapeHtml(years)}</div>`:""}
+        ${relation?`<div class="info-line"><b>Quan hệ:</b> ${escapeHtml(relation)}</div>`:""}
+        <div class="info-line"><b>Thông tin:</b> ${escapeHtml(person.info||"Chưa có thông tin")}</div>
+      </div>
+    </div>
+    <div class="detail-spouses">
+      <b>💑 Vợ / Chồng</b>
+      <div class="spouse-grid" style="margin-top:8px">
+        ${spouses.length?spouses.map((s,i)=>`
+          <div class="spouse-card">
+            <img src="${s.img||placeholder(s.name)}" onclick="${s.img?"full(this.src)":""}">
+            <div>
+              <div class="sname">${escapeHtml(s.name)}</div>
+              <div style="font-size:10px;color:#777">${s.gender==="female"?"Nữ":"Nam"}${yearText(s)?" • "+escapeHtml(yearText(s)):""}</div>
+              ${s.info?`<div class="spouse-extra">${escapeHtml(s.info)}</div>`:""}
+            </div>
+          </div>`).join(""):`<span style="font-size:12px;color:#888">Chưa có vợ/chồng</span>`}
+      </div>
+    </div>
+    <div class="menu-grid">
+      ${person===owner?`<button class="blue" onclick="openEdit()">✎ Chỉnh sửa</button>`:""}
+      ${person===owner?`<button class="green" onclick="addChild();closeAll()">👶 Thêm Con</button>`:""}
+      ${person===owner?`<button class="purple" onclick="addParent();closeAll()">⬆️ Thêm Bố/Mẹ</button>`:""}
+      ${person===owner?`<button class="orange" onclick="focusSpouse()">💑 Quản lý Vợ/Chồng</button>`:""}
+      ${person===owner?`<button class="red" onclick="deletePerson()">🗑 Xóa người này</button>`:""}
+      <button class="gray" onclick="closeAll()">Đóng</button>
+    </div>`;
+  document.getElementById("detailContent").innerHTML=html;
+  document.getElementById("overlay").style.display="block";
+  document.getElementById("detailModal").style.display="block";
+}
+
+function openEdit(){
+  const n=find(familyData,activeId);if(!n)return;
+  document.getElementById("nameInput").value=n.name;
+  document.getElementById("genderInput").value=n.gender;
+  document.getElementById("birthInput").value=n.birthYear||"";
+  document.getElementById("deathInput").value=n.deathYear||"";
+  document.getElementById("infoInput").value=n.info||"";
+  document.getElementById("preview").src=n.img||placeholder(n.name);
+  refreshSpouseEdit(n);
+  document.getElementById("detailModal").style.display="none";
+  document.getElementById("editModal").style.display="block";
+}
+
+function refreshSpouseEdit(n){
+  const box=document.getElementById("spouseEditList");
+  box.innerHTML="";
+  (n.spouses||[]).forEach((s,i)=>{
+    const r=document.createElement("div");
+    r.className="spouse-edit";
+    r.innerHTML=`
+      <img src="${s.img||placeholder(s.name)}">
+      <div style="flex:1;min-width:0">
+        <input value="${escapeHtml(s.name)}" placeholder="Tên vợ/chồng">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+          <input class="s-birth" inputmode="numeric" maxlength="4" value="${escapeHtml(s.birthYear||"")}" placeholder="Năm sinh">
+          <input class="s-death" inputmode="numeric" maxlength="4" value="${escapeHtml(s.deathYear||"")}" placeholder="Năm mất">
+        </div>
+        <input class="s-info" value="${escapeHtml(s.info||"")}" placeholder="Thông tin">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <button class="blue" style="border:0;border-radius:5px;color:#fff;padding:5px" onclick="spousePhoto(${i})">Ảnh</button>
+        <button class="red" style="border:0;border-radius:5px;color:#fff;padding:5px" onclick="removeSpouse(${i})">X</button>
+      </div>`;
+    const inputs=r.querySelectorAll("input");
+    inputs[0].onchange=e=>s.name=e.target.value;
+    inputs[1].onchange=e=>s.birthYear=e.target.value.trim();
+    inputs[2].onchange=e=>s.deathYear=e.target.value.trim();
+    inputs[3].onchange=e=>s.info=e.target.value;
+    r.querySelector("img").onclick=()=>s.img&&full(s.img);
+    box.appendChild(r);
+  });
+}
+
+function addSpouse(){
+  const n=find(familyData,activeId),v=document.getElementById("newSpouse").value.trim();if(!n||!v)return;
+  n.spouses.push({name:v,gender:n.gender==="female"?"male":"female",birthYear:"",deathYear:"",info:"",img:""});document.getElementById("newSpouse").value="";refreshSpouseEdit(n);render();
+}
+function removeSpouse(i){const n=find(familyData,activeId);if(!n)return;if(confirm("Xóa người phối ngẫu này?")){n.spouses.splice(i,1);refreshSpouseEdit(n);render()}}
+function spousePhoto(i){const inp=document.createElement("input");inp.type="file";inp.accept="image/*";inp.onchange=e=>startCrop(e,i);inp.click()}
+function saveEdit(){
+  const n=find(familyData,activeId);if(!n)return;
+  const name=document.getElementById("nameInput").value.trim();if(!name){alert("Vui lòng nhập họ tên");return}
+  n.name=name;
+  n.gender=document.getElementById("genderInput").value;
+  n.birthYear=document.getElementById("birthInput").value.trim();
+  n.deathYear=document.getElementById("deathInput").value.trim();
+  n.info=document.getElementById("infoInput").value;
+  render();closeAll();
+}
+function addChild(){
+  const n=find(familyData,activeId);if(!n)return;
+  n.children.push({id:uid(),name:"Người mới",gender:"male",birthYear:"",deathYear:"",info:"",img:"",spouses:[],children:[]});
+  render();
+}
+function addParent(){
+  const name=prompt("Nhập tên Bố/Mẹ:");if(!name)return;
+  const male=confirm("OK = Nam\nCancel = Nữ");
+  familyData={id:uid(),name,gender:male?"male":"female",birthYear:"",deathYear:"",info:"Đời tiền bối",img:"",spouses:[],children:[familyData]};
+  render();closeAll();
+}
+function deletePerson(){
+  if(!activeId)return;
+  if(familyData.id===activeId){
+    alert("Không thể xóa người gốc. Nếu muốn bỏ người gốc, hãy thêm thế hệ tiền bối trước.");
+    return;
+  }
+  const n=find(familyData,activeId);
+  if(!n)return;
+  if(!confirm("Xóa "+n.name+"?\n\nCác con của người này sẽ được nối trực tiếp vào cha/mẹ hiện tại để không mất dữ liệu."))return;
+  const p=parentOf(familyData,activeId);
+  if(p){
+    const index=p.children.findIndex(c=>c.id===activeId);
+    if(index>=0){
+      const promoted=Array.isArray(n.children)?n.children:[];
+      // Thay B bằng toàn bộ các con của B, giữ nguyên toàn bộ cây bên dưới.
+      p.children.splice(index,1,...promoted);
+    }
+  }
+  activeId=null;
+  render();
+  closeAll();
+}
+function focusSpouse(){openEdit()}
+function closeAll(){document.getElementById("overlay").style.display="none";document.getElementById("detailModal").style.display="none";document.getElementById("editModal").style.display="none";document.getElementById("cropModal").style.display="none"}
+function full(src){document.getElementById("fullImg").src=src;document.getElementById("fullPhoto").style.display="flex"}
+function closeFull(){document.getElementById("fullPhoto").style.display="none"}
+function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+
+function startCrop(e,type){
+  const f=e.target.files?.[0];if(!f)return;cropType=type;
+  const r=new FileReader();r.onload=x=>{const img=document.getElementById("cropImg");img.onload=()=>{crop={x:0,y:0,scale:Math.max(260/img.naturalWidth,260/img.naturalHeight),down:false,sx:0,sy:0};document.getElementById("cropZoom").min=crop.scale;document.getElementById("cropZoom").value=crop.scale;applyCrop();document.getElementById("cropModal").style.display="block";document.getElementById("overlay").style.display="block"};img.src=x.target.result};r.readAsDataURL(f);e.target.value=""}
+function applyCrop(){crop.scale=+document.getElementById("cropZoom").value;document.getElementById("cropImg").style.transform=`translate(calc(-50% + ${crop.x}px),calc(-50% + ${crop.y}px)) scale(${crop.scale})`}
+const cropBox=document.getElementById("cropBox");
+cropBox.onpointerdown=e=>{crop.down=true;crop.sx=e.clientX-crop.x;crop.sy=e.clientY-crop.y;cropBox.setPointerCapture(e.pointerId)}
+cropBox.onpointermove=e=>{if(!crop.down)return;crop.x=e.clientX-crop.sx;crop.y=e.clientY-crop.sy;applyCrop()}
+cropBox.onpointerup=()=>crop.down=false;
+cropBox.onpointercancel=()=>crop.down=false;
+function finishCrop(){
+  const img=document.getElementById("cropImg"),canvas=document.createElement("canvas");canvas.width=400;canvas.height=400;const ctx=canvas.getContext("2d"),source=260/crop.scale;
+  let sx=(img.naturalWidth-source)/2-crop.x/crop.scale,sy=(img.naturalHeight-source)/2-crop.y/crop.scale;sx=Math.max(0,Math.min(img.naturalWidth-source,sx));sy=Math.max(0,Math.min(img.naturalHeight-source,sy));
+  ctx.drawImage(img,sx,sy,source,source,0,0,400,400);const b64=canvas.toDataURL("image/jpeg",.82),n=find(familyData,activeId);if(!n){closeCrop();return}
+  if(cropType==="member"){n.img=b64;document.getElementById("preview").src=b64}else if(n.spouses[cropType])n.spouses[cropType].img=b64;
+  closeCrop();refreshSpouseEdit(n);render();
+}
+function closeCrop(){document.getElementById("cropModal").style.display="none";if(document.getElementById("editModal").style.display!=="block")document.getElementById("overlay").style.display="none"}
+
+function exportJSON(){
+  if(!familyData){
+    alert("Chưa có dữ liệu gia phả để xuất.");
+    return;
+  }
+
+  // Tên file có ngày + giờ theo thời gian trên thiết bị.
+  // Ví dụ: GiaPha_2026-09-22_09-25-30.json
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,"0");
+  const timestamp=
+    now.getFullYear()+"-"+
+    pad(now.getMonth()+1)+"-"+
+    pad(now.getDate())+"_"+
+    pad(now.getHours())+"-"+
+    pad(now.getMinutes())+"-"+
+    pad(now.getSeconds());
+
+  const b=new Blob(
+    [JSON.stringify(familyData,null,2)],
+    {type:"application/json;charset=utf-8"}
+  );
+  const a=document.createElement("a");
+  const url=URL.createObjectURL(b);
+
+  a.href=url;
+  a.download="GiaPha_"+timestamp+".json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function importJSON(e){
+  const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=x=>{try{familyData=JSON.parse(x.target.result);normalize(familyData);render();alert("Đã mở dữ liệu gia phả.")}catch(err){alert("File JSON không hợp lệ.")}};r.readAsText(f);e.target.value=""
+}
+function zoomBy(v){zoom=Math.max(.25,Math.min(3,zoom+v));applyZoom()}
+function resetZoom(){zoom=1;applyZoom()}
+function applyZoom(){tree.style.transform=`scale(${zoom})`;document.getElementById("zoomPct").textContent=Math.round(zoom*100)+"%"}
+function centerTree(){
+  applyZoom();
+  requestAnimationFrame(()=>{
+    const scaledW=tree.offsetWidth*zoom;
+    const scaledH=tree.offsetHeight*zoom;
+    const leftOffset=tree.offsetLeft;
+    const topOffset=tree.offsetTop;
+    wrapper.scrollLeft=Math.max(0,leftOffset+(scaledW-wrapper.clientWidth)/2);
+    // Đưa phần đầu cây về vùng nhìn thấy, nhưng vẫn tính đúng theo zoom.
+    wrapper.scrollTop=Math.max(0,topOffset-8);
+  });
+}
+
+wrapper.onpointerdown=e=>{if(e.target.closest(".family-box,.toolbar,.zoom"))return;wrapper._drag={x:e.clientX,y:e.clientY,l:wrapper.scrollLeft,t:wrapper.scrollTop};wrapper.setPointerCapture(e.pointerId)}
+wrapper.onpointermove=e=>{if(!wrapper._drag)return;wrapper.scrollLeft=wrapper._drag.l-(e.clientX-wrapper._drag.x);wrapper.scrollTop=wrapper._drag.t-(e.clientY-wrapper._drag.y)}
+wrapper.onpointerup=()=>wrapper._drag=null;
+wrapper.onpointercancel=()=>wrapper._drag=null;
+
+/* ===================== THÔNG BÁO ĐỊNH KỲ ===================== */
+function showNotice(){
+  document.getElementById("noticeOverlay").style.display="block";
+  document.getElementById("noticeModal").style.display="block";
+}
+function closeNotice(){
+  document.getElementById("noticeOverlay").style.display="none";
+  document.getElementById("noticeModal").style.display="none";
+}
+function startNoticeTimer(){
+  showNotice();
+  setInterval(showNotice,5*60*1000);
+}
+
+/* ===================== XUẤT ẢNH ===================== */
+async function exportFamilyImage(){
+  if(typeof window.html2canvas!=="function"){
+    try{
+      await loadHtml2Canvas();
+    }catch(e){
+      alert("Không thể tải thư viện xuất ảnh. Vui lòng kiểm tra kết nối Internet rồi thử lại.");
+      return;
+    }
+  }
+
+  /*
+    XUẤT PNG SẠCH:
+    Không chụp trực tiếp #tree đang hiển thị vì #tree có transform/scroll,
+    SVG overflow và các lớp trang trí có thể làm html2canvas tạo "bóng ma".
+    Thay vào đó tạo một bản sao độc lập, không transform, không shadow.
+  */
+  const source=tree;
+  const width=Math.ceil(source.offsetWidth);
+  const height=Math.ceil(source.offsetHeight);
+
+  const stage=document.createElement("div");
+  stage.id="pngExportStage";
+  Object.assign(stage.style,{
+    position:"fixed",
+    left:"0",
+    top:"0",
+    width:width+"px",
+    height:height+"px",
+    overflow:"hidden",
+    background:"#ffffff",
+    zIndex:"2147483000",
+    pointerEvents:"none",
+    transform:"none",
+    filter:"none",
+    boxShadow:"none"
+  });
+
+  const clone=source.cloneNode(true);
+
+  Object.assign(clone.style,{
+    position:"absolute",
+    left:"0",
+    top:"0",
+    margin:"0",
+    width:width+"px",
+    height:height+"px",
+    transform:"none",
+    transformOrigin:"top left",
+    overflow:"visible",
+    background:"#ffffff",
+    boxShadow:"none",
+    filter:"none",
+    opacity:"1"
+  });
+
+  // Ép tất cả thành phần con trong bản xuất không có shadow/filter.
+  const all=clone.querySelectorAll("*");
+  all.forEach(el=>{
+    el.style.boxShadow="none";
+    el.style.filter="none";
+    el.style.textShadow="none";
+    el.style.animation="none";
+    el.style.transition="none";
+  });
+
+  stage.appendChild(clone);
+  document.body.appendChild(stage);
+
+  // Đợi trình duyệt hoàn tất layout/paint của bản clone.
+  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+
+  try{
+    const canvas=await html2canvas(stage,{
+      backgroundColor:"#ffffff",
+      scale:2,
+      useCORS:true,
+      allowTaint:false,
+      logging:false,
+      imageTimeout:15000,
+      foreignObjectRendering:false,
+      removeContainer:true,
+      x:0,
+      y:0,
+      width:width,
+      height:height,
+      scrollX:0,
+      scrollY:0,
+      windowWidth:width,
+      windowHeight:height
+    });
+
+    // Tạo canvas trắng độc lập để tránh alpha/ghost ở vùng ngoài cây.
+    const cleanCanvas=document.createElement("canvas");
+    cleanCanvas.width=canvas.width;
+    cleanCanvas.height=canvas.height;
+
+    const ctx=cleanCanvas.getContext("2d",{alpha:false});
+    ctx.fillStyle="#ffffff";
+    ctx.fillRect(0,0,cleanCanvas.width,cleanCanvas.height);
+    ctx.drawImage(canvas,0,0);
+
+    const link=document.createElement("a");
+    link.download="GiaPha.png";
+    link.href=cleanCanvas.toDataURL("image/png");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+  }catch(e){
+    console.error("PNG export:",e);
+    alert("Xuất PNG không thành công. Bạn có thể dùng 'Xuất SVG/Corel' để xuất vector.");
+  }finally{
+    stage.remove();
+  }
+}
+
+/* ===================== XUẤT SVG VECTOR CHO COREL ===================== */
+function exportFamilySVG(){
+  /*
+    SVG là vector: chữ, đường nối và khung không bị vỡ khi phóng rất lớn.
+    CorelDRAW có thể mở/import SVG để tiếp tục chỉnh sửa.
+  */
+  normalize(familyData);
+  layout();
+
+  const W=Math.ceil(totalW);
+  const H=Math.ceil(totalH);
+
+  const esc=s=>String(s??"")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&apos;");
+
+  let out=[];
+  out.push(`<?xml version="1.0" encoding="UTF-8"?>`);
+  out.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`);
+  out.push(`<rect width="100%" height="100%" fill="#ffffff"/>`);
+  out.push(`<rect x="18" y="18" width="${W-36}" height="${H-36}" rx="4" fill="none" stroke="#a33" stroke-width="3"/>`);
+  out.push(`<rect x="26" y="26" width="${W-52}" height="${H-52}" rx="2" fill="none" stroke="#c66" stroke-width="1"/>`);
+  out.push(`<style>
+    .box{fill:#fff;stroke:#777;stroke-width:2}
+    .male{fill:#1769aa}
+    .female{fill:#c2185b}
+    .name{font-family:Arial,sans-serif;font-size:12px;font-weight:700}
+    .year{font-family:Arial,sans-serif;font-size:9px;font-weight:600;fill:#777}
+    .title{font-family:Georgia,"Times New Roman",serif;font-size:23px;font-weight:700;letter-spacing:2px;fill:#ffe7a8}
+    .subtitle{font-family:Georgia,"Times New Roman",serif;font-size:12px;font-weight:700;fill:#8d1717}
+    .poem{font-family:Georgia,"Times New Roman",serif;font-size:14px;font-style:italic;fill:#6e4b30}
+  </style>`);
+  const titleX=W/2;
+  out.push(`<rect x="${titleX-325}" y="38" width="650" height="60" rx="8" fill="#8b1515" stroke="#d6a33a" stroke-width="2"/>`);
+  out.push(`<text x="${titleX}" y="75" text-anchor="middle" class="title">SƠ ĐỒ GIA TỘC</text>`);
+  out.push(`<text x="${titleX}" y="116" text-anchor="middle" class="subtitle">Cội nguồn • Gia tộc • Tổ tiên</text>`);
+  const poemX=W-175;
+  out.push(`<text x="${poemX}" y="65" text-anchor="middle" class="poem">Con người có tổ có tông</text>`);
+  out.push(`<text x="${poemX}" y="87" text-anchor="middle" class="poem">Như cây có cội, như sông có nguồn</text>`);
+
+  // Đường nối.
+  function line(x1,y1,x2,y2){
+    out.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#555" stroke-width="2"/>`);
+  }
+  function drawConnect(n){
+    if(!n.children.length)return;
+    const p=pos.get(n.id);
+    const cs=n.children.map(c=>pos.get(c.id));
+    const mid=p.bottom+(cs[0].y-p.bottom)/2;
+    line(p.cx,p.bottom,p.cx,mid);
+    if(cs.length>1)line(Math.min(...cs.map(x=>x.cx)),mid,Math.max(...cs.map(x=>x.cx)),mid);
+    cs.forEach(c=>line(c.cx,mid,c.cx,c.y));
+    n.children.forEach(drawConnect);
+  }
+  drawConnect(familyData);
+
+  function textParts(person,x,y,w){
+    const center=x+w/2;
+    const gender=person.gender==="female"?"♀":"♂";
+    const color=person.gender==="female"?"#c2185b":"#1769aa";
+    const name=esc(person.name);
+    const years=esc(yearText(person));
+    out.push(`<text x="${center}" y="${y+20}" text-anchor="middle" class="name ${person.gender==="female"?"female":"male"}" fill="${color}">${gender} ${name}</text>`);
+    if(years)out.push(`<text x="${center}" y="${y+34}" text-anchor="middle" class="year">${years}</text>`);
+  }
+
+  function drawNode(n){
+    const p=pos.get(n.id);
+    const vertical=boxMode(n)==="vertical";
+    out.push(`<rect class="box" x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="7" ry="7"/>`);
+
+    const people=[n,...(n.spouses||[])];
+    const eachW=145;
+    if(vertical){
+      people.forEach((person,i)=>{
+        const yy=p.y+i*51;
+        textParts(person,p.x,yy,p.w);
+        if(i>0)line(p.x+10,yy,p.x+p.w-10,yy);
+      });
+    }else{
+      people.forEach((person,i)=>{
+        const xx=p.x+i*145;
+        textParts(person,xx,p.y,145);
+        if(i>0)line(xx,p.y+6,xx,p.y+p.h-6);
+      });
+    }
+    n.children.forEach(drawNode);
+  }
+
+  drawNode(familyData);
+  out.push("</svg>");
+
+  const blob=new Blob([out.join("")],{type:"image/svg+xml;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="GiaPha_Corel.svg";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+
+function loadHtml2Canvas(){
+  return new Promise((resolve,reject)=>{
+    const s=document.createElement("script");
+    s.src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+    s.async=true;
+    s.onload=resolve;
+    s.onerror=reject;
+    document.head.appendChild(s);
+  });
+}
+
+window.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){
+    closeFull();
+    closeAll();
+    closeNotice();
+  }
+});
+const REMOTE_JSON_URL="https://raw.githubusercontent.com/hoangminhhp234/GiaPha/refs/heads/main/GiaPha.json";
+
+async function loadInitialFamilyData(){
+  // Ưu tiên dữ liệu mới nhất trên GitHub.
+  // Nếu không có mạng/GitHub lỗi thì dùng bản localStorage.
+  try{
+    const response=await fetch(REMOTE_JSON_URL);
+    if(!response.ok)throw new Error("HTTP "+response.status);
+
+    const data=await response.json();
+    if(!data || typeof data!=="object")throw new Error("JSON không hợp lệ");
+
+    familyData=data;
+    normalize(familyData);
+
+    try{
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(familyData));
+    }catch(e){}
+
+    render();
+    setTimeout(centerTree,100);
+    return true;
+  }catch(err){
+    console.warn("Không tải được GiaPha.json từ GitHub:",err);
+
+    try{
+      familyData=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
+    }catch(e){
+      familyData=null;
     }
 
-    function render() {
-        const container = document.getElementById('tree-container');
-        container.innerHTML = '';
-
-        if (!familyData) return;
-
-        const positions = new Map();
-        const lines = [];
-
-        const treeW = getSubtreeWidth(familyData);
-        const treeH = getTreeHeight(familyData);
-
-        const canvasW = treeW + LAYOUT.sidePad * 2;
-        const canvasH = treeH + LAYOUT.topPad * 2;
-
-        const canvas = document.createElement('div');
-        canvas.className = 'family-canvas';
-        canvas.style.width = canvasW + 'px';
-        canvas.style.height = canvasH + 'px';
-
-        layoutTree(
-            familyData,
-            LAYOUT.sidePad,
-            LAYOUT.topPad,
-            lines,
-            positions
-        );
-
-        canvas.appendChild(createSvgLines(canvasW, canvasH, lines));
-
-        function appendNode(node) {
-            const p = positions.get(node.id);
-            if (!p) return;
-
-            const holder = document.createElement('div');
-            holder.className = 'family-node';
-            holder.style.left = p.x + 'px';
-            holder.style.top = p.y + 'px';
-            holder.style.width = p.w + 'px';
-
-            const card = document.createElement('div');
-            card.className = `node-card ${node.gender || 'male'}`;
-
-            const sHtml = (node.spouses || []).map(s => `
-                <div class="spouse-item">
-                    <img src="${s.img || 'https://via.placeholder.com/30'}"
-                         class="spouse-avatar">
-                    <span>${escapeHtml(s.name || '')}</span>
-                </div>
-            `).join('');
-
-            card.innerHTML = `
-                <img src="${node.img || 'https://via.placeholder.com/60'}"
-                     class="avatar"
-                     style="width:34px;height:34px;object-fit:cover;border-radius:50%;">
-                <span class="name">
-                    <span class="node-name-short">${escapeHtml(getShortName(node.name || ''))}</span>
-                </span>
-                <span class="info">${escapeHtml(node.info || '')}</span>
-                ${sHtml}
-            `;
-
-            card.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-            });
-
-            card.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                openEditModal(node.id);
-            });
-
-            holder.appendChild(card);
-            canvas.appendChild(holder);
-
-            (node.children || []).forEach(appendNode);
-        }
-
-        appendNode(familyData);
-        container.appendChild(canvas);
-        applyZoom();
-
-        localStorage.setItem('giapha_v7_fixed', JSON.stringify(familyData));
+    if(!familyData){
+      familyData={
+        id:"root",
+        name:"Cụ Tổ",
+        gender:"male",
+        birthYear:"",
+        deathYear:"",
+        info:"Đời 1",
+        img:"",
+        spouses:[],
+        children:[]
+      };
     }
 
-    function getShortName(name) {
-        // "Nguyễn Văn Vượng" -> "Vượng"
-        // "Phạm Ngọc Hân" -> "Hân"
-        // Giữ nguyên tên nếu chỉ có một từ.
-        const s = String(name || '').trim().replace(/\s+/g, ' ');
-        if (!s) return '';
-        const parts = s.split(' ');
-        return parts[parts.length - 1];
-    }
+    normalize(familyData);
+    render();
+    setTimeout(centerTree,100);
+    return false;
+  }
+}
 
-    function escapeHtml(value) {
-        return String(value)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
-    function openEditModal(id) {
-        const node = findNode(familyData, id);
-        if (!node) return;
-
-        activeId = id;
-
-        document.getElementById('m-name').value = node.name || '';
-        document.getElementById('m-info').value = node.info || '';
-        document.getElementById('m-gender').value = node.gender || 'male';
-        document.getElementById('preview-img').src =
-            node.img || 'https://via.placeholder.com/80';
-
-        refreshSpouseUI(node);
-
-        // Menu chỉ xuất hiện sau khi bấm đúng thành viên.
-        document.getElementById('overlay').style.display = 'block';
-        document.getElementById('modal-edit').style.display = 'block';
-    }
-
-    function refreshSpouseUI(node) {
-        const list = document.getElementById('spouse-list-ui'); list.innerHTML = "";
-        (node.spouses || []).forEach((s, i) => {
-            const d = document.createElement('div');
-            d.style = "display:flex; align-items:center; gap:8px; background:#f9fafb; padding:5px; margin-bottom:5px; border-radius:4px; font-size:12px;";
-            d.innerHTML = `<img src="${s.img || 'https://via.placeholder.com/30'}" style="width:30px; height:30px; border-radius:50%; cursor:pointer" onclick="openFullView(this.src)">
-                           <span style="flex:1">${s.name}</span>
-                           <button onclick="changeSpousePhoto(${i})" style="background:#3b82f6; padding:3px 6px; font-size:10px">Ảnh</button>
-                           <button onclick="removeSpouse(${i})" style="background:#ef4444; padding:3px 6px; font-size:10px">X</button>`;
-            list.appendChild(d);
-        });
-    }
-
-    function changeSpousePhoto(idx) {
-        const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
-        inp.onchange = (e) => initCropProcess(e, idx); inp.click();
-    }
-
-    function findNode(root, id) { if (root.id === id) return root; if (root.children) { for (let c of root.children) { let f = findNode(c, id); if (f) return f; } } return null; }
-    function closeAllModals() {
-        document.querySelectorAll('.modal-box, #full-photo-view')
-            .forEach(m => m.style.display = 'none');
-        document.getElementById('overlay').style.display = 'none';
-        activeId = null;
-    }
-
-    function closeCrop() {
-        document.getElementById('modal-crop').style.display = 'none';
-
-        // Nếu đang chỉnh thành viên thì trả overlay về trạng thái
-        // tương ứng với modal chỉnh sửa.
-        if (activeId && document.getElementById('modal-edit').style.display === 'block') {
-            document.getElementById('overlay').style.display = 'block';
-        } else {
-            document.getElementById('overlay').style.display = 'none';
-        }
-    }
-    function addSpouseAction() { const n = document.getElementById('new-spouse-name').value; if (!n) return; const node = findNode(familyData, activeId); node.spouses.push({ name: n, img: "" }); document.getElementById('new-spouse-name').value = ""; refreshSpouseUI(node); }
-    function removeSpouse(idx) { findNode(familyData, activeId).spouses.splice(idx, 1); refreshSpouseUI(findNode(familyData, activeId)); }
-    function addChildAction() { const node = findNode(familyData, activeId); if (!node.children) node.children = []; node.children.push({ id: "id_"+Date.now(), name: "Người mới", gender: "male", info: "", img: "", spouses: [], children: [] }); saveChanges(); }
-    function deleteNodeAction() { if (activeId === 'root' || !confirm("Xóa người này?")) return; const rm = (p, id) => { if (!p.children) return; const idx = p.children.findIndex(c => c.id === id); if (idx !== -1) p.children.splice(idx, 1); else p.children.forEach(c => rm(c, id)); }; rm(familyData, activeId); render(); closeAllModals(); }
-    function saveChanges() { const node = findNode(familyData, activeId); node.name = document.getElementById('m-name').value; node.info = document.getElementById('m-info').value; node.gender = document.getElementById('m-gender').value; render(); closeAllModals(); }
-    function exportToJson() { const b = new Blob([JSON.stringify(familyData, null, 2)], { type: "application/json" }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = "GiaPha.json"; a.click(); }
-    function importFromJson(e) { const r = new FileReader(); r.onload = (ev) => { familyData = JSON.parse(ev.target.result); render(); }; r.readAsText(e.target.files[0]); }
-
-    window.onload = initData;
+window.onload=async()=>{
+  await loadInitialFamilyData();
+  startNoticeTimer();
+}
 </script>
 </body>
 </html>
