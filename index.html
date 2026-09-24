@@ -21,7 +21,7 @@ html,body{margin:0;width:100%;height:100%;font-family:Arial,sans-serif;backgroun
 #lines{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
 .family-node{position:absolute;z-index:5}
 .family-box{position:relative;display:flex;align-items:center;justify-content:center;min-width:145px;min-height:48px;padding:5px 7px;background:#fff;border:2px solid #777;border-radius:7px;box-shadow:none}
-.person-row{position:relative;min-width:130px;padding:3px 7px;text-align:center;font-size:12px;line-height:15px;font-weight:700;cursor:pointer;border-radius:4px;white-space:normal;overflow-wrap:anywhere}
+.person-row{position:relative;min-width:130px;padding:3px 7px;text-align:center;font-size:12px;line-height:15px;font-weight:700;cursor:pointer;border-radius:4px;white-space:normal;overflow-wrap:anywhere;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .person-years{display:block;margin-top:2px;font-size:9px;line-height:11px;font-weight:600;color:#777}
 .spouse-extra{font-size:10px;color:#666;margin-top:3px;line-height:13px}
 .person-row.male{color:#1769aa}.person-row.female{color:#c2185b}
@@ -37,6 +37,7 @@ html,body{margin:0;width:100%;height:100%;font-family:Arial,sans-serif;backgroun
   width:100%;
   min-height:36px;
   display:flex;
+  flex-direction:column;
   align-items:center;
   justify-content:center;
 }
@@ -44,7 +45,6 @@ html,body{margin:0;width:100%;height:100%;font-family:Arial,sans-serif;backgroun
   border-left:0;
   border-top:1px solid #ddd;
 }
-.gender-dot{font-size:9px;opacity:.65;margin-right:2px}
 .detail-modal{display:none;position:fixed;z-index:2200;left:50%;top:50%;transform:translate(-50%,-50%);width:min(760px,95vw);max-height:90vh;overflow:auto;background:#fff;border-radius:14px;box-shadow:0 20px 60px #0005;padding:18px}
 .overlay{display:none;position:fixed;inset:0;background:#0008;z-index:2100}
 .detail-head{display:flex;gap:18px;align-items:flex-start}
@@ -350,8 +350,8 @@ function yearText(person){
   const b=String(person.birthYear||"").trim();
   const d=String(person.deathYear||"").trim();
   if(b&&d)return b+"-"+d;
-  if(b)return "sn"+b;
-  if(d)return "mn"+d;
+  if(b)return b;
+  if(d)return "-"+d;
   return "";
 }
 
@@ -367,7 +367,7 @@ function boxSize(n){
   const vertical=true; // Luôn xếp người chính và vợ/chồng trên - dưới.
   const count=1+(n.spouses||[]).length;
   const w=145;
-  const rowH=36;
+  const rowH=40;
   return vertical
     ? {w,h:count*rowH+10+(count-1)}
     : {w:w*count,h:48};
@@ -517,7 +517,7 @@ function personRow(person,id){
   const row=document.createElement("div");
   row.className="person-row "+(person.gender==="female"?"female":"male");
   const years=yearText(person);
-  row.innerHTML=`<span class="gender-dot">${person.gender==="female"?"♀":"♂"}</span>${escapeHtml(person.name)}${years?`<span class="person-years">${escapeHtml(years)}</span>`:""}`;
+  row.innerHTML=`${escapeHtml(person.name)}${years?`<span class="person-years">${escapeHtml(years)}</span>`:""}`;
   row.onclick=e=>{e.stopPropagation();openDetail(id)};
   return row;
 }
@@ -661,6 +661,8 @@ function showDetail(person,owner){
       ${person===owner?`<button class="green" onclick="addChild();closeAll()">👶 Thêm Con</button>`:""}
       ${person===owner?`<button class="purple" onclick="addParent();closeAll()">⬆️ Thêm Bố/Mẹ</button>`:""}
       ${person===owner?`<button class="orange" onclick="focusSpouse()">💑 Quản lý Vợ/Chồng</button>`:""}
+      ${person===owner?`<button class="blue" onclick="moveSibling(-1)">⬅️ Sinh trước / Sang trái</button>`:""}
+      ${person===owner?`<button class="blue" onclick="moveSibling(1)">➡️ Sinh sau / Sang phải</button>`:""}
       ${person===owner?`<button class="red" onclick="deletePerson()">🗑 Xóa người này</button>`:""}
       <button class="gray" onclick="closeAll()">Đóng</button>
     </div>`;
@@ -739,6 +741,46 @@ function addParent(){
   familyData={id:uid(),name,gender:male?"male":"female",birthYear:"",deathYear:"",info:"Đời tiền bối",img:"",spouses:[],children:[familyData]};
   render();closeAll();
 }
+function moveSibling(direction){
+  if(!activeId)return;
+
+  // Di chuyển trong danh sách anh/chị/em cùng cha/mẹ.
+  // Chỉ đổi vị trí node nên toàn bộ con/cháu và dữ liệu của node đi theo.
+  const p=parentOf(familyData,activeId);
+
+  if(!p){
+    alert("Người này đang là Cụ Tổ/gốc gia phả, không có anh/chị/em để di chuyển.");
+    return;
+  }
+
+  const index=p.children.findIndex(c=>c.id===activeId);
+  if(index<0)return;
+
+  const target=index+direction;
+
+  if(target<0){
+    alert("Người này đã ở vị trí đầu tiên (sinh trước nhất) trong các anh/chị/em.");
+    return;
+  }
+
+  if(target>=p.children.length){
+    alert("Người này đã ở vị trí cuối cùng trong các anh/chị/em.");
+    return;
+  }
+
+  const temp=p.children[index];
+  p.children[index]=p.children[target];
+  p.children[target]=temp;
+
+  render();
+
+  // Giữ nguyên người vừa di chuyển là người đang được chọn.
+  const moved=find(familyData,activeId);
+  if(moved){
+    setTimeout(()=>showDetail(moved,moved),0);
+  }
+}
+
 function deletePerson(){
   if(!activeId)return;
   if(familyData.id===activeId){
@@ -1034,11 +1076,10 @@ function exportFamilySVG(){
 
   function textParts(person,x,y,w){
     const center=x+w/2;
-    const gender=person.gender==="female"?"♀":"♂";
     const color=person.gender==="female"?"#c2185b":"#1769aa";
     const name=esc(person.name);
     const years=esc(yearText(person));
-    out.push(`<text x="${center}" y="${y+20}" text-anchor="middle" class="name ${person.gender==="female"?"female":"male"}" fill="${color}">${gender} ${name}</text>`);
+    out.push(`<text x="${center}" y="${y+20}" text-anchor="middle" class="name ${person.gender==="female"?"female":"male"}" fill="${color}">${name}</text>`);
     if(years)out.push(`<text x="${center}" y="${y+34}" text-anchor="middle" class="year">${years}</text>`);
   }
 
@@ -1050,8 +1091,9 @@ function exportFamilySVG(){
     const people=[n,...(n.spouses||[])];
     const eachW=145;
     if(vertical){
+      const rowH=37;
       people.forEach((person,i)=>{
-        const yy=p.y+i*51;
+        const yy=p.y+i*rowH;
         textParts(person,p.x,yy,p.w);
         if(i>0)line(p.x+10,yy,p.x+p.w-10,yy);
       });
