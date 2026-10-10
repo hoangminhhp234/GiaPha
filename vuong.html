@@ -1,0 +1,490 @@
+
+    <!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Theo Dõi BTX</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif; margin:16px; background:#f7f7f7;}
+    .wrap{max-width:1100px;margin:12px auto;}
+    h2{ text-align:center; margin:6px 0 10px 0; font-size:20px; }
+    .subtitle{ text-align:center; color:#666; margin-top:-6px; margin-bottom:8px; font-size:13px }
+    .controls {text-align:center; margin-bottom:12px;}
+    .btn {background:#2d9cdb;color:#fff;border:none;padding:8px 12px;border-radius:6px;margin:0 6px;cursor:pointer;}
+    .btn.active {background:#1b6f9a;}
+    .card {background:white; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08); padding:16px; margin-bottom:16px;}
+    #canvasWrap {height:360px;}
+    table.ts-info, table.minmax-table {
+      width:100%; border-collapse:collapse; margin-top:12px;
+    }
+    table.ts-info th, table.ts-info td,
+    table.minmax-table th, table.minmax-table td {
+      border:1px solid #eee; padding:8px; text-align:center; font-size:14px;
+    }
+    table.ts-info th, table.minmax-table th {
+      background:#fafafa; font-weight:600;
+    }
+    .row-colored td { font-weight:600; }
+    .channel-name {
+      display:flex; align-items:center; gap:8px; justify-content:flex-start;
+    }
+    .warn { font-size:12px;color:#b44; margin-top:8px; text-align:center; }
+    @media (max-width:640px) {
+      #canvasWrap {height:240px;}
+      .btn{padding:6px 8px; margin:4px;}
+      td{font-size:12px;}
+    }
+	/* bảng gọn cho mobile */
+table.compact th,
+table.compact td {
+  padding: 6px;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  table.compact th,
+  table.compact td {
+    padding: 4px;
+    font-size: 11px;
+  }
+
+  /* Ẩn chữ, chỉ giữ số */
+  table.compact th {
+    font-size: 10px;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h2 id="pageTitle">Theo Dõi Dữ Liệu BTX</h2>
+    <div class="subtitle" id="totalHashSubtitle">Tổng Hashrate: -- MH/s</div>
+<div class="subtitle" id="totalPowerSubtitle">Tổng Công Suất: -- W</div>
+
+    <div class="controls card">
+      <span>Thời gian hiển thị: </span>
+      <button class="btn" data-mins="10">10 phút</button>
+      <button class="btn" data-mins="30">30 phút</button>
+      <button class="btn" data-mins="60">1 giờ</button>
+      <button class="btn" data-mins="180">3 giờ</button>
+      <button class="btn" data-mins="360">6 giờ</button>
+    </div>
+
+    <div class="card" id="chartCard">
+      <div id="canvasWrap"><canvas id="hashChart"></canvas></div>
+    </div>
+
+    <div class="card">
+<table class="ts-info compact" id="latestTable">
+  <thead>
+    <tr>
+      <th>Hash</th>
+      <th>ASIC</th>
+      <th>VR</th>
+      <th>Freq</th>
+      <th>Pwr</th>
+      <th>Core</th>
+      <th>input</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr id="row_k1" class="row-colored">
+      <td id="k1_hr">--</td>
+      <td id="k1_temp">--</td>
+      <td id="k1_vr">--</td>
+      <td id="k1_freq">--</td>
+      <td id="k1_power">--</td>
+      <td id="k1_coreVoltage">--</td>
+      <td id="k1_voltage">--</td>
+    </tr>
+    <tr id="row_k2" class="row-colored">
+      <td id="k2_hr">--</td>
+      <td id="k2_temp">--</td>
+      <td id="k2_vr">--</td>
+      <td id="k2_freq">--</td>
+      <td id="k2_power">--</td>
+      <td id="k2_coreVoltage">--</td>
+      <td id="k2_voltage">--</td>
+    </tr>
+    <tr id="row_k3" class="row-colored">
+      <td id="k3_hr">--</td>
+      <td id="k3_temp">--</td>
+      <td id="k3_vr">--</td>
+      <td id="k3_freq">--</td>
+      <td id="k3_power">--</td>
+      <td id="k3_coreVoltage">--</td>
+      <td id="k3_voltage">--</td>
+    </tr>
+  </tbody>
+</table>
+
+    </div>
+  </div>
+
+<script>
+
+const CHANNELS = [
+  { id: 3187244, key: 'V9AVUWJB5I9K32D4' },
+  { id: 3192699, key: '3IUSF5ID0VGIULVA' },
+  { id: 3192701, key: 'DSKEV3IZ5UVHVMP5' }
+];
+
+const COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c'];
+
+let CHANNEL_NAMES = Array.from({length: CHANNELS.length}, (_,i)=>`CH ${i+1}`);
+let CHANNEL_COLORS = Array.from({length: CHANNELS.length}, (_,i)=>colorForIndexOrName(i, CHANNEL_NAMES[i]));
+
+let MINUTES = 10;
+const RESULTS = 8000;
+let chart = null;
+
+function tsFmt(d){
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}%20${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}:${String(d.getUTCSeconds()).padStart(2,'0')}`;
+}
+function urlForChannel(ch, mins){
+  const start = new Date(Date.now() - mins*60000);
+  return `https://api.thingspeak.com/channels/${ch.id}/feeds.json?api_key=${ch.key}&start=${tsFmt(start)}&results=${RESULTS}`;
+}
+async function fetchJson(url){
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } catch(e) {
+    console.error('Fetch error', e, url);
+    return null;
+  }
+}
+
+async function fetchChannelName(ch, index) {
+  try {
+    const url = `https://api.thingspeak.com/channels/${ch.id}.json?api_key=${ch.key}`;
+    const r = await fetch(url);
+    if (!r.ok) {
+      console.warn('Không lấy được tên cho channel', ch.id, r.status);
+      return null;
+    }
+    const j = await r.json();
+    if (j && j.name) {
+      CHANNEL_NAMES[index] = j.name;
+      // gán màu (giữ màu cố định nếu có; nếu không có đủ màu sẽ sinh theo tên)
+      CHANNEL_COLORS[index] = colorForIndexOrName(index, CHANNEL_NAMES[index]);
+    }
+  } catch(e) {
+    console.error("Name fetch error", e);
+  }
+}
+
+function parseFeeds(j){
+  if(!j || !j.feeds) return {pts:[], meta:{}, blocks:0};
+
+  const pts = [];
+  const meta = {};
+  let blocks = 0;
+
+  for(const f of j.feeds){
+    if (f.created_at)
+      pts.push({
+        t:new Date(f.created_at),
+        v: isFinite(Number(f.field1)) ? Number(f.field1) : null
+      });
+
+    if (f.field1 && f.field1 !== '') meta.hr = f.field1;
+    if (f.field2 && f.field2 !== '') meta.temp = f.field2;
+    if (f.field3 && f.field3 !== '') meta.vr = f.field3;
+    if (f.field4 && f.field4 !== '') meta.freq = f.field4;
+    if (f.field5 && f.field5 !== '') meta.coreVoltage = f.field5;
+    if (f.field6 && f.field6 !== '') meta.power = f.field6;
+	if (f.field8 && f.field8 !== '') meta.voltage = f.field8;
+
+    // 🔴 ĐẾM BLOCK
+    if (f.field7 !== undefined && Number(f.field7) === 1) {
+      blocks++;
+    }
+  }
+
+  pts.sort((a,b)=>a.t-b.t);
+  return {pts, meta, blocks};
+}
+
+
+function alignSeries(allPoints){
+  const timeSet = new Set();
+  allPoints.forEach(arr=>arr.forEach(p=>timeSet.add(p.t.getTime())));
+  const times = Array.from(timeSet).sort((a,b)=>a-b);
+  const labels = times.map(ms=>new Date(ms).toLocaleTimeString());
+  const datasets = allPoints.map((arr, idx)=>{
+    const map = new Map(arr.map(p=>[p.t.getTime(), p.v]));
+    return { label: CHANNEL_NAMES[idx] || `Ch ${idx+1}`, data: times.map(ms => map.has(ms) ? map.get(ms) : null), color: CHANNEL_COLORS[idx] || colorForIndexOrName(idx, CHANNEL_NAMES[idx]) };
+  });
+  return {labels, datasets};
+}
+
+function globalMaxFromDatasets(datasets) {
+  let gmax = NaN;
+  datasets.forEach(ds => {
+    ds.data.forEach(v => {
+      if (v === null || v === undefined) return;
+      const n = Number(v);
+      if (!isFinite(n)) return;
+      if (isNaN(gmax) || n > gmax) gmax = n;
+    });
+  });
+  return gmax;
+}
+
+function renderChart(labels, datasets) {
+  const cjDatasets = datasets.map(ds => ({
+    label: ds.label,
+    data: ds.data,
+    borderColor: ds.color,
+    backgroundColor: ds.color,
+    tension: 0.2,
+    pointRadius: 2,
+    fill: false,
+    spanGaps: true
+  }));
+
+  const FIXED_YMIN = 1000;
+  const DEFAULT_SPAN = 200;
+  const gmax = globalMaxFromDatasets(datasets);
+
+  let yMin = FIXED_YMIN;
+  let yMax;
+
+  if (!isNaN(gmax)) {
+    const candidateMax = Math.ceil(gmax * 1.01);
+    yMax = Math.max(FIXED_YMIN + DEFAULT_SPAN, candidateMax);
+  } else {
+    yMax = FIXED_YMIN + DEFAULT_SPAN;
+  }
+
+  if (!chart) {
+    const ctx = document.getElementById('hashChart').getContext('2d');
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: cjDatasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'nearest', intersect: false },
+        scales: {
+          x: { display: true, title: { display: true, text: 'Time' } },
+          y: {
+            display: true,
+            title: { display: true, text: 'Hashrate' },
+            min: yMin,
+            max: yMax
+          }
+        },
+        plugins: { legend: { position: 'top' } }
+      }
+    });
+  } else {
+    chart.data.labels = labels;
+    chart.data.datasets = cjDatasets;
+    if (chart.options && chart.options.scales && chart.options.scales.y) {
+      chart.options.scales.y.min = yMin;
+      chart.options.scales.y.max = yMax;
+    }
+    chart.update();
+  }
+}
+
+function updateLatest(meta, idx){
+  const id = idx + 1;
+  const m = meta || {};
+
+  document.getElementById(`k${id}_hr`).innerText   = m.hr   ? Number(m.hr).toFixed(1) : "--";
+  document.getElementById(`k${id}_temp`).innerText = m.temp ? Number(m.temp).toFixed(1) : "--";
+  document.getElementById(`k${id}_vr`).innerText   = m.vr   ? Number(m.vr).toFixed(1) : "--";
+  document.getElementById(`k${id}_freq`).innerText = m.freq ? Math.round(Number(m.freq)) : "--";
+  document.getElementById(`k${id}_power`).innerText = m.power ? Number(m.power).toFixed(1) : "--";
+
+  // Core voltage
+let core = "--";
+if (m.coreVoltage) {
+  const v = Number(m.coreVoltage);
+  if (isFinite(v))
+    core = Math.round(Math.abs(v) > 50 ? v : v * 1000).toString();
+}
+  document.getElementById(`k${id}_coreVoltage`).innerText = core;
+
+// 🔴 INPUT VOLTAGE (voltage) — CHỈ HIỂN THỊ SỐ NGUYÊN
+let voltage = "--";
+if (m.voltage) {
+  const v = Number(m.voltage);
+  if (isFinite(v)) voltage = Math.round(v).toString();
+}
+document.getElementById(`k${id}_voltage`).innerText = voltage;
+
+}
+
+
+function updateTotalPowerSubtitle(metas) {
+  let sum = 0;
+  let any = false;
+
+  metas.forEach(m => {
+    if (m && m.power) {
+      const v = Number(m.power);
+      if (isFinite(v)) {
+        sum += v;
+        any = true;
+      }
+    }
+  });
+
+  const el = document.getElementById('totalPowerSubtitle');
+  if (!any)
+    el.innerText = 'Tổng Công Suất: -- W';
+  else
+    el.innerText = 'Tổng Công Suất: ' + sum.toFixed(1) + ' W';
+}
+
+function updateTotalHashSubtitle(metas) {
+  let sum = 0;
+  let any = false;
+  metas.forEach(m => {
+    if (m && m.hr) {
+      const v = Number(m.hr);
+      if (isFinite(v)) { sum += v; any = true; }
+    }
+  });
+  const el = document.getElementById('totalHashSubtitle');
+  if (!any) el.innerText = 'Tổng Hashrate: -- Mh/s';
+  else el.innerText = 'Tổng Hashrate: ' + (sum.toFixed(1)) + ' Mh/s';
+}
+
+function updatePageTitle(totalBlocks = 0) {
+  const titleEl = document.getElementById('pageTitle');
+  const names = CHANNEL_NAMES.map(n => n || '').filter(n => n !== '');
+
+  let suffix = names.length ? names.join(' · ') : '';
+  let blockText = totalBlocks > 0
+    ? ` | ${totalBlocks}`
+    : ` | 0`;
+
+  titleEl.innerText = `Theo Dõi Dữ Liệu BTX — ${suffix}${blockText}`;
+}
+
+function calcMinMax(feeds){
+  let min=NaN, max=NaN;
+  if (!feeds) return {min:NaN,max:NaN,len:0};
+  feeds.forEach(f => {
+    const n = Number(f.field1);
+    if (!isFinite(n)) return;
+    if (isNaN(min) || n < min) min = n;
+    if (isNaN(max) || n > max) max = n;
+  });
+  return {min, max, len: feeds.length};
+}
+
+async function refreshAll(){
+  const reqs = CHANNELS.map(ch => fetchJson(urlForChannel(ch, MINUTES)));
+  const results = await Promise.all(reqs);
+
+  // Nếu response từ feeds.json có object "channel" -> lấy tên ở đó
+  results.forEach((r, i) => {
+    try {
+      if (r && r.channel && r.channel.name) {
+        CHANNEL_NAMES[i] = r.channel.name;
+        // cập nhật màu ngay khi biết tên
+        CHANNEL_COLORS[i] = colorForIndexOrName(i, CHANNEL_NAMES[i]);
+      }
+    } catch(e) {
+      console.warn("Không lấy tên từ feeds response cho channel", i, e);
+    }
+  });
+
+  for (let i=0;i<CHANNELS.length;i++){
+    const row = document.getElementById(`row_k${i+1}`);
+    const col = CHANNEL_COLORS[i];
+    if (row) { row.style.borderLeft = `6px solid ${col}`; row.style.color = col; }
+  }
+
+  const parsed = results.map(r => parseFeeds(r));
+  const allPoints = parsed.map(p => p.pts);
+  const metas = parsed.map(p => p.meta);
+  const totalBlocks = parsed.reduce((sum, p) => sum + (p.blocks || 0), 0);
+  const aligned = alignSeries(allPoints);
+  renderChart(aligned.labels, aligned.datasets);
+updatePageTitle(totalBlocks);
+  metas.forEach((m, i) => updateLatest(m, i));
+updateTotalHashSubtitle(metas);
+updateTotalPowerSubtitle(metas);
+
+}
+
+function hashStringToInt(str) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 16777619);
+  }
+  return (h >>> 0);
+}
+function hslFromHash(hash) {
+  const h = hash % 360;
+  const s = 60 + (hash % 20); // 60-79
+  const l = 45 + (hash % 10); // 45-54
+  return `hsl(${h} ${s}% ${l}%)`;
+}
+function colorForIndexOrName(idx, name) {
+  if (idx < COLORS.length && COLORS[idx]) return COLORS[idx];
+  if (name) {
+    const h = hashStringToInt(name);
+    return hslFromHash(h);
+  }
+
+  const h = hashStringToInt(String(idx));
+  return hslFromHash(h);
+}
+
+document.addEventListener('DOMContentLoaded', async function(){
+  document.querySelectorAll('.btn').forEach(b => {
+    b.addEventListener('click', () => {
+      const m = Number(b.getAttribute('data-mins'));
+      if (isFinite(m) && m > 0) {
+        MINUTES = m;
+        document.querySelectorAll('.btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        refreshAll();
+      }
+    });
+    if (Number(b.getAttribute('data-mins')) === MINUTES) b.classList.add('active');
+  });
+
+  for (let i=0;i<CHANNELS.length;i++){
+    const r = document.getElementById(`row_k${i+1}`);
+    const col = CHANNEL_COLORS[i] || colorForIndexOrName(i, CHANNEL_NAMES[i]);
+    if (r) r.style.borderLeft = `6px solid ${col}`;
+  }
+
+  // LẤY TÊN TỪ THINGSPEAK TRƯỚC khi bắt đầu refresh
+  await Promise.all(CHANNELS.map((ch,i)=>fetchChannelName(ch,i)));
+  // cập nhật màu sau khi biết tên
+  CHANNEL_COLORS = CHANNEL_NAMES.map((n,i)=>colorForIndexOrName(i,n));
+
+  for (let i=0;i<CHANNELS.length;i++){
+    const row = document.getElementById(`row_k${i+1}`);
+    const col = CHANNEL_COLORS[i];
+    if (row) { row.style.borderLeft = `6px solid ${col}`; row.style.color = col; }
+  }
+
+  updatePageTitle(0);
+
+  // refresh data lần đầu và set interval
+  refreshAll();
+  setInterval(refreshAll, 10000);
+});
+</script>
+</body>
+</html>
+
+
