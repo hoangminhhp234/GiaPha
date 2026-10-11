@@ -57,8 +57,10 @@ table.compact td {
 }
 
   
+.bch-metrics-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
 .api-metric{background:#f7f9fb;border:1px solid #e5e9ee;border-radius:8px;padding:14px 8px;text-align:center;min-width:0}
 .api-metric strong{display:block;font-size:clamp(16px,3.5vw,25px);overflow-wrap:anywhere}
+.api-metric .vnd-value{display:block;color:#9aa1a8;font-size:clamp(13px,2.8vw,20px);font-weight:700;margin-top:10px;overflow-wrap:anywhere}
 .api-metric span{display:block;color:#666;font-size:12px;margin-top:7px}
 </style>
 </head>
@@ -129,10 +131,15 @@ table.compact td {
 
     <div class="card" id="bchCard">
       <h2>2Miners BCH Pool</h2>
-      <div style="display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px">
-        <div class="api-metric"><strong id="bchShare">--</strong><span>Chia Sẻ Vòng Của Bạn</span></div>
-        <div class="api-metric"><strong id="bchBch">-- BCH</strong><span>Lợi nhuận hằng ngày dự kiến</span></div>
-        <div class="api-metric"><strong id="bchVnd">-- VND</strong><span>Giá trị lợi nhuận hằng ngày</span></div>
+      <div class="subtitle">Dữ liệu lấy từ ThingSpeak</div>
+      <div class="bch-metrics-grid">
+        <div class="api-metric"><strong id="bchShare">--</strong><span>Tỷ lệ share trong vòng</span></div>
+        <div class="api-metric"><strong id="bchBch">-- BCH</strong><small class="vnd-value" id="bchBchVnd">VND --</small><span>Lợi nhuận dự kiến / ngày</span></div>
+        <div class="api-metric"><strong id="bchVnd">-- VND</strong><span>Giá trị dự kiến / ngày</span></div>
+        <div class="api-metric"><strong id="bchUnconfirmed">-- BCH</strong><small class="vnd-value" id="bchUnconfirmedVnd">VND --</small><span>Số dư chưa xác nhận</span></div>
+        <div class="api-metric"><strong id="bchUnpaid">-- BCH</strong><small class="vnd-value" id="bchUnpaidVnd">VND --</small><span>Số dư chưa thanh toán</span></div>
+        <div class="api-metric"><strong id="bchPaid">-- BCH</strong><small class="vnd-value" id="bchPaidVnd">VND --</small><span>Tổng đã thanh toán</span></div>
+        <div class="api-metric"><strong id="bch24h">-- BCH</strong><small class="vnd-value" id="bch24hVnd">VND --</small><span>Phần thưởng 24 giờ</span></div>
       </div>
       <div id="bchStatus" class="warn">Đang chờ dữ liệu ThingSpeak…</div>
     </div>
@@ -463,6 +470,42 @@ function colorForIndexOrName(idx, name) {
 
 const BCH_CHANNEL_ID = 3531035;
 const BCH_READ_KEY = 'MOWKZSNRDH59ZOKX';
+// Cùng các API tỷ giá/giá BCH đã dùng trong script AutoJS6.
+const BCH_PRICE_API = 'https://currencies.2miners.com/api/v1/ticker/bch/';
+const VND_RATE_API = 'https://currencies.2miners.com/api/v1/local/vnd';
+let bchVndPerCoin = null;
+
+function formatVnd(value) {
+  if (!Number.isFinite(value)) return 'VND --';
+  return 'VND ' + Math.round(value).toLocaleString('vi-VN');
+}
+
+function setBchVnd(elementId, bchValue) {
+  const el = document.getElementById(elementId);
+  const amount = bchValue === null || bchValue === undefined || bchValue === '' ? NaN : Number(bchValue);
+  if (!el) return;
+  el.textContent = bchVndPerCoin !== null && Number.isFinite(amount)
+    ? formatVnd(amount * bchVndPerCoin)
+    : 'VND --';
+}
+
+async function refreshBchVndRate() {
+  // Công thức giống phần ước tính trước đó: BCH * giá BCH/USD * tỷ giá VND/USD.
+  const [priceResponse, rateResponse] = await Promise.all([
+    fetch(BCH_PRICE_API, {cache:'no-store'}),
+    fetch(VND_RATE_API, {cache:'no-store'})
+  ]);
+  if (!priceResponse.ok) throw new Error('Không lấy được giá BCH (HTTP ' + priceResponse.status + ')');
+  if (!rateResponse.ok) throw new Error('Không lấy được tỷ giá VND (HTTP ' + rateResponse.status + ')');
+  const priceJson = await priceResponse.json();
+  const rateJson = await rateResponse.json();
+  const priceUsd = Number(priceJson && priceJson[0] && priceJson[0].price_usd);
+  const vndRate = Number(rateJson && rateJson.rate);
+  if (!Number.isFinite(priceUsd) || priceUsd <= 0 || !Number.isFinite(vndRate) || vndRate <= 0) {
+    throw new Error('Dữ liệu giá BCH hoặc tỷ giá VND không hợp lệ');
+  }
+  bchVndPerCoin = priceUsd * vndRate;
+}
 
 async function refreshBchMetrics() {
   const status = document.getElementById('bchStatus');
@@ -474,11 +517,36 @@ async function refreshBchMetrics() {
     if ([f.field1, f.field2, f.field3].some(v => v === null || v === undefined || v === '')) {
       throw new Error('Bản ghi mới nhất chưa có đủ field1, field2, field3');
     }
-    document.getElementById('bchShare').textContent = f.field1 + ' %';
-    document.getElementById('bchBch').textContent = f.field2 + ' BCH';
-    document.getElementById('bchVnd').textContent = Number(f.field3).toLocaleString('vi-VN') + ' VND';
-    status.textContent = 'Cập nhật: ' + (f.created_at ? new Date(f.created_at).toLocaleString('vi-VN') : 'vừa xong');
-    status.style.color = '#287a36';
+
+    // Tỷ giá được lấy mới; nếu API tỷ giá lỗi, vẫn hiển thị BCH và VND --.
+    try {
+      await refreshBchVndRate();
+    } catch(rateError) {
+      bchVndPerCoin = null;
+      console.warn('Không cập nhật được quy đổi BCH/VND:', rateError);
+    }
+
+    document.getElementById('bchShare').textContent = Number(f.field1).toLocaleString('vi-VN') + ' %';
+    document.getElementById('bchBch').textContent = Number(f.field2).toFixed(6) + ' BCH';
+    document.getElementById('bchVnd').textContent = Number(f.field3).toLocaleString('vi-VN', {maximumFractionDigits:0}) + ' VND';
+
+    const values = [
+      ['bchUnconfirmed', 'bchUnconfirmedVnd', f.field4],
+      ['bchUnpaid', 'bchUnpaidVnd', f.field5],
+      ['bchPaid', 'bchPaidVnd', f.field6],
+      ['bch24h', 'bch24hVnd', f.field7]
+    ];
+    values.forEach(([valueId, vndId, raw]) => {
+      const valid = raw !== null && raw !== undefined && raw !== '' && Number.isFinite(Number(raw));
+      const amount = valid ? Number(raw) : null;
+      document.getElementById(valueId).textContent = valid ? amount.toFixed(6) + ' BCH' : '-- BCH';
+      setBchVnd(vndId, amount);
+    });
+    setBchVnd('bchBchVnd', Number(f.field2));
+
+    status.textContent = 'Cập nhật: ' + (f.created_at ? new Date(f.created_at).toLocaleString('vi-VN') : 'vừa xong') +
+      (bchVndPerCoin !== null ? ' · Đã cập nhật tỷ giá BCH/VND' : ' · Chưa lấy được tỷ giá BCH/VND');
+    status.style.color = bchVndPerCoin !== null ? '#287a36' : '#b8860b';
   } catch(e) {
     status.textContent = 'Chưa đọc được dữ liệu BCH: ' + e.message;
     status.style.color = '#b44';
