@@ -56,7 +56,11 @@ table.compact td {
   }
 }
 
-  </style>
+  
+.api-metric{background:#f7f9fb;border:1px solid #e5e9ee;border-radius:8px;padding:14px 8px;text-align:center;min-width:0}
+.api-metric strong{display:block;font-size:clamp(16px,3.5vw,25px);overflow-wrap:anywhere}
+.api-metric span{display:block;color:#666;font-size:12px;margin-top:7px}
+</style>
 </head>
 <body>
   <div class="wrap">
@@ -121,6 +125,16 @@ table.compact td {
   </tbody>
 </table>
 
+    </div>
+
+    <div class="card" id="bchCard">
+      <h2>2Miners BCH Pool</h2>
+      <div style="display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px">
+        <div class="api-metric"><strong id="bchShare">--</strong><span>Chia Sẻ Vòng Của Bạn</span></div>
+        <div class="api-metric"><strong id="bchBch">-- BCH</strong><span>Lợi nhuận hằng ngày dự kiến</span></div>
+        <div class="api-metric"><strong id="bchVnd">-- VND</strong><span>Giá trị lợi nhuận hằng ngày</span></div>
+      </div>
+      <div id="bchStatus" class="warn">Đang chờ dữ liệu ThingSpeak…</div>
     </div>
   </div>
 
@@ -446,6 +460,31 @@ function colorForIndexOrName(idx, name) {
   return hslFromHash(h);
 }
 
+
+const BCH_CHANNEL_ID = 3531035;
+const BCH_READ_KEY = 'MOWKZSNRDH59ZOKX';
+
+async function refreshBchMetrics() {
+  const status = document.getElementById('bchStatus');
+  try {
+    const url = `https://api.thingspeak.com/channels/${BCH_CHANNEL_ID}/feeds/last.json?api_key=${BCH_READ_KEY}`;
+    const response = await fetch(url, {cache:'no-store'});
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const f = await response.json();
+    if ([f.field1, f.field2, f.field3].some(v => v === null || v === undefined || v === '')) {
+      throw new Error('Bản ghi mới nhất chưa có đủ field1, field2, field3');
+    }
+    document.getElementById('bchShare').textContent = f.field1 + ' %';
+    document.getElementById('bchBch').textContent = f.field2 + ' BCH';
+    document.getElementById('bchVnd').textContent = Number(f.field3).toLocaleString('vi-VN') + ' VND';
+    status.textContent = 'Cập nhật: ' + (f.created_at ? new Date(f.created_at).toLocaleString('vi-VN') : 'vừa xong');
+    status.style.color = '#287a36';
+  } catch(e) {
+    status.textContent = 'Chưa đọc được dữ liệu BCH: ' + e.message;
+    status.style.color = '#b44';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async function(){
   document.querySelectorAll('.btn').forEach(b => {
     b.addEventListener('click', () => {
@@ -482,6 +521,8 @@ document.addEventListener('DOMContentLoaded', async function(){
   // refresh data lần đầu và set interval
   refreshAll();
   setInterval(refreshAll, 10000);
+  refreshBchMetrics();
+  setInterval(refreshBchMetrics, 10000);
 });
 </script>
 </body>
