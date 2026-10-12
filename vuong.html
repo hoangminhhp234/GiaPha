@@ -1,5 +1,6 @@
 
-    <!doctype html>
+
+ <!doctype html>
 <html lang="vi">
 <head>
   <meta charset="utf-8" />
@@ -11,7 +12,6 @@
     .wrap{max-width:1100px;margin:12px auto;}
     h2{ text-align:center; margin:6px 0 10px 0; font-size:20px; }
     .subtitle{ text-align:center; color:#666; margin-top:-6px; margin-bottom:8px; font-size:13px }
-    .power-cost-line{white-space:nowrap;overflow-x:auto;font-size:clamp(10px,2.8vw,13px);padding:2px 0;}
     .controls {text-align:center; margin-bottom:12px;}
     .btn {background:#2d9cdb;color:#fff;border:none;padding:8px 12px;border-radius:6px;margin:0 6px;cursor:pointer;}
     .btn.active {background:#1b6f9a;}
@@ -57,21 +57,13 @@ table.compact td {
   }
 }
 
-  
-.bch-metrics-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
-/* Thẻ Phần thưởng 24 giờ chiếm toàn bộ chiều ngang trên điện thoại và máy tính */
-#bchCard .bch-metrics-grid > .api-metric:last-child{grid-column:1 / -1}
-.api-metric{background:#f7f9fb;border:1px solid #e5e9ee;border-radius:8px;padding:14px 8px;text-align:center;min-width:0}
-.api-metric strong{display:block;font-size:clamp(16px,3.5vw,25px);overflow-wrap:anywhere}
-.api-metric .vnd-value{display:block;color:#9aa1a8;font-size:clamp(13px,2.8vw,20px);font-weight:700;margin-top:10px;overflow-wrap:anywhere}
-.api-metric span{display:block;color:#666;font-size:12px;margin-top:7px}
-</style>
+  </style>
 </head>
 <body>
   <div class="wrap">
     <h2 id="pageTitle">Theo Dõi Dữ Liệu BTX</h2>
     <div class="subtitle" id="totalHashSubtitle">Tổng Hashrate: -- MH/s</div>
-<div class="subtitle power-cost-line" id="totalPowerSubtitle">Công suất tiêu thụ: -- W - Số điện 1 tháng: -- kWh (-- VNĐ)</div>
+<div class="subtitle" id="totalPowerSubtitle">Tổng Công Suất: -- W</div>
 
     <div class="controls card">
       <span>Thời gian hiển thị: </span>
@@ -130,21 +122,6 @@ table.compact td {
   </tbody>
 </table>
 
-    </div>
-
-    <div class="card" id="bchCard">
-      <h2>2Miners BCH Pool</h2>
-      <div class="subtitle">Dữ liệu lấy từ ThingSpeak</div>
-      <div class="bch-metrics-grid">
-        <div class="api-metric"><strong id="bchShare">--</strong><span>Tỷ lệ share trong vòng</span></div>
-        <div class="api-metric"><strong id="bchBch">-- BCH</strong><small class="vnd-value" id="bchBchVnd">VND --</small><span>Lợi nhuận dự kiến / ngày</span></div>
-        <div class="api-metric"><strong id="bchVnd">-- VND</strong><span>Giá trị dự kiến / ngày</span></div>
-        <div class="api-metric"><strong id="bchUnconfirmed">-- BCH</strong><small class="vnd-value" id="bchUnconfirmedVnd">VND --</small><span>Số dư chưa xác nhận</span></div>
-        <div class="api-metric"><strong id="bchUnpaid">-- BCH</strong><small class="vnd-value" id="bchUnpaidVnd">VND --</small><span>Số dư chưa thanh toán</span></div>
-        <div class="api-metric"><strong id="bchPaid">-- BCH</strong><small class="vnd-value" id="bchPaidVnd">VND --</small><span>Tổng đã thanh toán</span></div>
-        <div class="api-metric"><strong id="bch24h">-- BCH</strong><small class="vnd-value" id="bch24hVnd">VND --</small><span>Phần thưởng 24 giờ</span></div>
-      </div>
-      <div id="bchStatus" class="warn">Đang chờ dữ liệu ThingSpeak…</div>
     </div>
   </div>
 
@@ -351,51 +328,25 @@ document.getElementById(`k${id}_voltage`).innerText = voltage;
 }
 
 
-let lastValidPowerW = null;
-let powerSubtitleRequestRunning = false;
+function updateTotalPowerSubtitle(metas) {
+  let sum = 0;
+  let any = false;
 
-async function updateTotalPowerSubtitle() {
-  const el = document.getElementById('totalPowerSubtitle');
-  // Tránh nhiều yêu cầu chồng lên nhau khi các thành phần khác đang làm mới dữ liệu.
-  if (powerSubtitleRequestRunning) return;
-  powerSubtitleRequestRunning = true;
-  try {
-    // field8 có thể không nằm trong bản ghi mới nhất vì ThingSpeak tạo bản ghi riêng
-    // cho mỗi lần cập nhật. Đọc một nhóm bản ghi gần đây và tìm field8 mới nhất có giá trị.
-    const url = `https://api.thingspeak.com/channels/3531035/feeds.json?api_key=MOWKZSNRDH59ZOKX&results=100`;
-    const response = await fetch(url, { cache: 'no-store' });
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    const data = await response.json();
-    const feeds = Array.isArray(data.feeds) ? data.feeds : [];
-    let powerW = NaN;
-
-    // Duyệt từ bản ghi mới nhất về trước, bỏ qua các bản ghi không có field8.
-    for (let i = feeds.length - 1; i >= 0; i--) {
-      const raw = feeds[i] && feeds[i].field8;
-      if (raw === null || raw === undefined || String(raw).trim() === '') continue;
-      const value = Number(raw);
-      if (Number.isFinite(value) && value >= 0) {
-        powerW = value;
-        break;
+  metas.forEach(m => {
+    if (m && m.power) {
+      const v = Number(m.power);
+      if (isFinite(v)) {
+        sum += v;
+        any = true;
       }
     }
-    if (!Number.isFinite(powerW)) throw new Error('Không tìm thấy field8 hợp lệ trong 100 bản ghi gần nhất');
+  });
 
-    lastValidPowerW = powerW;
-    // field8 là công suất tức thời (W); ước tính chạy liên tục 24 giờ/ngày trong 30 ngày.
-    const monthlyKwh = powerW / 1000 * 24 * 30;
-    const monthlyCost = monthlyKwh * 3350 * 1.08; // cộng VAT 8%
-    const fmt = n => n.toLocaleString('vi-VN', { maximumFractionDigits: 2 });
-    el.textContent = `Công suất tiêu thụ: ${fmt(powerW)} W - Số điện 1 tháng: ${fmt(monthlyKwh)} kWh (${Math.round(monthlyCost).toLocaleString('vi-VN')} VNĐ)`;
-  } catch (e) {
-    // Không thay số liệu đang hiển thị bằng dấu -- chỉ vì một lần đọc API bị lỗi.
-    if (lastValidPowerW === null) {
-      el.textContent = 'Công suất tiêu thụ: -- W - Số điện 1 tháng: -- kWh (-- VNĐ)';
-    }
-    console.warn('Không đọc được field8 của ThingSpeak channel 3531035:', e);
-  } finally {
-    powerSubtitleRequestRunning = false;
-  }
+  const el = document.getElementById('totalPowerSubtitle');
+  if (!any)
+    el.innerText = 'Tổng Công Suất: -- W';
+  else
+    el.innerText = 'Tổng Công Suất: ' + sum.toFixed(1) + ' W';
 }
 
 function updateTotalHashSubtitle(metas) {
@@ -468,6 +419,7 @@ async function refreshAll(){
 updatePageTitle(totalBlocks);
   metas.forEach((m, i) => updateLatest(m, i));
 updateTotalHashSubtitle(metas);
+updateTotalPowerSubtitle(metas);
 
 }
 
@@ -493,92 +445,6 @@ function colorForIndexOrName(idx, name) {
 
   const h = hashStringToInt(String(idx));
   return hslFromHash(h);
-}
-
-
-const BCH_CHANNEL_ID = 3531035;
-const BCH_READ_KEY = 'MOWKZSNRDH59ZOKX';
-// Cùng các API tỷ giá/giá BCH đã dùng trong script AutoJS6.
-const BCH_PRICE_API = 'https://currencies.2miners.com/api/v1/ticker/bch/';
-const VND_RATE_API = 'https://currencies.2miners.com/api/v1/local/vnd';
-let bchVndPerCoin = null;
-
-function formatVnd(value) {
-  if (!Number.isFinite(value)) return 'VND --';
-  return 'VND ' + Math.round(value).toLocaleString('vi-VN');
-}
-
-function setBchVnd(elementId, bchValue) {
-  const el = document.getElementById(elementId);
-  const amount = bchValue === null || bchValue === undefined || bchValue === '' ? NaN : Number(bchValue);
-  if (!el) return;
-  el.textContent = bchVndPerCoin !== null && Number.isFinite(amount)
-    ? formatVnd(amount * bchVndPerCoin)
-    : 'VND --';
-}
-
-async function refreshBchVndRate() {
-  // Công thức giống phần ước tính trước đó: BCH * giá BCH/USD * tỷ giá VND/USD.
-  const [priceResponse, rateResponse] = await Promise.all([
-    fetch(BCH_PRICE_API, {cache:'no-store'}),
-    fetch(VND_RATE_API, {cache:'no-store'})
-  ]);
-  if (!priceResponse.ok) throw new Error('Không lấy được giá BCH (HTTP ' + priceResponse.status + ')');
-  if (!rateResponse.ok) throw new Error('Không lấy được tỷ giá VND (HTTP ' + rateResponse.status + ')');
-  const priceJson = await priceResponse.json();
-  const rateJson = await rateResponse.json();
-  const priceUsd = Number(priceJson && priceJson[0] && priceJson[0].price_usd);
-  const vndRate = Number(rateJson && rateJson.rate);
-  if (!Number.isFinite(priceUsd) || priceUsd <= 0 || !Number.isFinite(vndRate) || vndRate <= 0) {
-    throw new Error('Dữ liệu giá BCH hoặc tỷ giá VND không hợp lệ');
-  }
-  bchVndPerCoin = priceUsd * vndRate;
-}
-
-async function refreshBchMetrics() {
-  const status = document.getElementById('bchStatus');
-  try {
-    const url = `https://api.thingspeak.com/channels/${BCH_CHANNEL_ID}/feeds/last.json?api_key=${BCH_READ_KEY}`;
-    const response = await fetch(url, {cache:'no-store'});
-    if (!response.ok) throw new Error('HTTP ' + response.status);
-    const f = await response.json();
-    if ([f.field1, f.field2, f.field3].some(v => v === null || v === undefined || v === '')) {
-      throw new Error('Bản ghi mới nhất chưa có đủ field1, field2, field3');
-    }
-
-    // Tỷ giá được lấy mới; nếu API tỷ giá lỗi, vẫn hiển thị BCH và VND --.
-    try {
-      await refreshBchVndRate();
-    } catch(rateError) {
-      bchVndPerCoin = null;
-      console.warn('Không cập nhật được quy đổi BCH/VND:', rateError);
-    }
-
-    document.getElementById('bchShare').textContent = Number(f.field1).toLocaleString('vi-VN') + ' %';
-    document.getElementById('bchBch').textContent = Number(f.field2).toFixed(6) + ' BCH';
-    document.getElementById('bchVnd').textContent = Number(f.field3).toLocaleString('vi-VN', {maximumFractionDigits:0}) + ' VND';
-
-    const values = [
-      ['bchUnconfirmed', 'bchUnconfirmedVnd', f.field4],
-      ['bchUnpaid', 'bchUnpaidVnd', f.field5],
-      ['bchPaid', 'bchPaidVnd', f.field6],
-      ['bch24h', 'bch24hVnd', f.field7]
-    ];
-    values.forEach(([valueId, vndId, raw]) => {
-      const valid = raw !== null && raw !== undefined && raw !== '' && Number.isFinite(Number(raw));
-      const amount = valid ? Number(raw) : null;
-      document.getElementById(valueId).textContent = valid ? amount.toFixed(6) + ' BCH' : '-- BCH';
-      setBchVnd(vndId, amount);
-    });
-    setBchVnd('bchBchVnd', Number(f.field2));
-
-    status.textContent = 'Cập nhật: ' + (f.created_at ? new Date(f.created_at).toLocaleString('vi-VN') : 'vừa xong') +
-      (bchVndPerCoin !== null ? ' · Đã cập nhật tỷ giá BCH/VND' : ' · Chưa lấy được tỷ giá BCH/VND');
-    status.style.color = bchVndPerCoin !== null ? '#287a36' : '#b8860b';
-  } catch(e) {
-    status.textContent = 'Chưa đọc được dữ liệu BCH: ' + e.message;
-    status.style.color = '#b44';
-  }
 }
 
 document.addEventListener('DOMContentLoaded', async function(){
@@ -617,11 +483,6 @@ document.addEventListener('DOMContentLoaded', async function(){
   // refresh data lần đầu và set interval
   refreshAll();
   setInterval(refreshAll, 10000);
-  // Công suất chỉ cần đọc mỗi 30 giây; tránh gọi API theo từng lần làm mới bảng Bitaxe.
-  updateTotalPowerSubtitle();
-  setInterval(updateTotalPowerSubtitle, 30000);
-  refreshBchMetrics();
-  setInterval(refreshBchMetrics, 10000);
 });
 </script>
 </body>
