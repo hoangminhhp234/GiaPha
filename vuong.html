@@ -63,7 +63,7 @@ table.compact td {
   <div class="wrap">
     <h2 id="pageTitle">Theo Dõi Dữ Liệu BTX</h2>
     <div class="subtitle" id="totalHashSubtitle">Tổng Hashrate: -- MH/s</div>
-<div class="subtitle" id="totalPowerSubtitle">Tổng Công Suất: -- W</div>
+<div class="subtitle power-cost-line" id="totalPowerSubtitle">Công suất tiêu thụ: -- W - Số điện 1 tháng: -- kWh (-- VNĐ)</div>
 
     <div class="controls card">
       <span>Thời gian hiển thị: </span>
@@ -326,27 +326,50 @@ if (m.voltage) {
 document.getElementById(`k${id}_voltage`).innerText = voltage;
 
 }
+let lastValidPowerW = null;
+let powerSubtitleRequestRunning = false;
+async function updateTotalPowerSubtitle() {
+  const el = document.getElementById('totalPowerSubtitle');
+  // Tránh nhiều yêu cầu chồng lên nhau khi các thành phần khác đang làm mới dữ liệu.
+  if (powerSubtitleRequestRunning) return;
+  powerSubtitleRequestRunning = true;
+  try {
+    // field8 có thể không nằm trong bản ghi mới nhất vì ThingSpeak tạo bản ghi riêng
+    // cho mỗi lần cập nhật. Đọc một nhóm bản ghi gần đây và tìm field8 mới nhất có giá trị.
+    const url = `https://api.thingspeak.com/channels/3531035/feeds.json?api_key=MOWKZSNRDH59ZOKX&results=100`;
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const data = await response.json();
+    const feeds = Array.isArray(data.feeds) ? data.feeds : [];
+    let powerW = NaN;
 
-
-function updateTotalPowerSubtitle(metas) {
-  let sum = 0;
-  let any = false;
-
-  metas.forEach(m => {
-    if (m && m.power) {
-      const v = Number(m.power);
-      if (isFinite(v)) {
-        sum += v;
-        any = true;
+    // Duyệt từ bản ghi mới nhất về trước, bỏ qua các bản ghi không có field8.
+    for (let i = feeds.length - 1; i >= 0; i--) {
+      const raw = feeds[i] && feeds[i].field8;
+      if (raw === null || raw === undefined || String(raw).trim() === '') continue;
+      const value = Number(raw);
+      if (Number.isFinite(value) && value >= 0) {
+        powerW = value;
+        break;
       }
     }
-  });
+    if (!Number.isFinite(powerW)) throw new Error('Không tìm thấy field8 hợp lệ trong 100 bản ghi gần nhất');
 
-  const el = document.getElementById('totalPowerSubtitle');
-  if (!any)
-    el.innerText = 'Tổng Công Suất: -- W';
-  else
-    el.innerText = 'Tổng Công Suất: ' + sum.toFixed(1) + ' W';
+    lastValidPowerW = powerW;
+    // field8 là công suất tức thời (W); ước tính chạy liên tục 24 giờ/ngày trong 30 ngày.
+    const monthlyKwh = powerW / 1000 * 24 * 30;
+    const monthlyCost = monthlyKwh * 3350 * 1.08; // cộng VAT 8%
+    const fmt = n => n.toLocaleString('vi-VN', { maximumFractionDigits: 2 });
+    el.textContent = `Công suất tiêu thụ: ${fmt(powerW)} W - Số điện 1 tháng: ${fmt(monthlyKwh)} kWh (${Math.round(monthlyCost).toLocaleString('vi-VN')} VNĐ)`;
+  } catch (e) {
+    // Không thay số liệu đang hiển thị bằng dấu -- chỉ vì một lần đọc API bị lỗi.
+    if (lastValidPowerW === null) {
+      el.textContent = 'Công suất tiêu thụ: -- W - Số điện 1 tháng: -- kWh (-- VNĐ)';
+    }
+    console.warn('Không đọc được field8 của ThingSpeak channel 3531035:', e);
+  } finally {
+    powerSubtitleRequestRunning = false;
+  }
 }
 
 function updateTotalHashSubtitle(metas) {
@@ -479,7 +502,9 @@ document.addEventListener('DOMContentLoaded', async function(){
   }
 
   updatePageTitle(0);
-
+  // Công suất chỉ cần đọc mỗi 30 giây; tránh gọi API theo từng lần làm mới bảng Bitaxe.
+  updateTotalPowerSubtitle();
+  setInterval(updateTotalPowerSubtitle, 20000);
   // refresh data lần đầu và set interval
   refreshAll();
   setInterval(refreshAll, 10000);
