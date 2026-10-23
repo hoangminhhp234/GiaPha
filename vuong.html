@@ -86,7 +86,7 @@ table.compact td {
       <th>ASIC</th>
       <th>VR</th>
       <th>Freq</th>
-      <th>Pwr</th>
+      <th>Best</th>
       <th>Core</th>
       <th>input</th>
     </tr>
@@ -97,7 +97,7 @@ table.compact td {
       <td id="k1_temp">--</td>
       <td id="k1_vr">--</td>
       <td id="k1_freq">--</td>
-      <td id="k1_power">--</td>
+      <td id="k1_best">--</td>
       <td id="k1_coreVoltage">--</td>
       <td id="k1_voltage">--</td>
     </tr>
@@ -106,7 +106,7 @@ table.compact td {
       <td id="k2_temp">--</td>
       <td id="k2_vr">--</td>
       <td id="k2_freq">--</td>
-      <td id="k2_power">--</td>
+      <td id="k2_best">--</td>
       <td id="k2_coreVoltage">--</td>
       <td id="k2_voltage">--</td>
     </tr>
@@ -115,7 +115,7 @@ table.compact td {
       <td id="k3_temp">--</td>
       <td id="k3_vr">--</td>
       <td id="k3_freq">--</td>
-      <td id="k3_power">--</td>
+      <td id="k3_best">--</td>
       <td id="k3_coreVoltage">--</td>
       <td id="k3_voltage">--</td>
     </tr>
@@ -198,7 +198,7 @@ function parseFeeds(j){
     if (f.field3 && f.field3 !== '') meta.vr = f.field3;
     if (f.field4 && f.field4 !== '') meta.freq = f.field4;
     if (f.field5 && f.field5 !== '') meta.coreVoltage = f.field5;
-    if (f.field6 && f.field6 !== '') meta.power = f.field6;
+    if (f.field6 && f.field6 !== '') meta.best = f.field6;
 	if (f.field8 && f.field8 !== '') meta.voltage = f.field8;
 
     // 🔴 ĐẾM BLOCK
@@ -306,8 +306,8 @@ function updateLatest(meta, idx){
   document.getElementById(`k${id}_temp`).innerText = m.temp ? Number(m.temp).toFixed(1) : "--";
   document.getElementById(`k${id}_vr`).innerText   = m.vr   ? Number(m.vr).toFixed(1) : "--";
   document.getElementById(`k${id}_freq`).innerText = m.freq ? Math.round(Number(m.freq)) : "--";
-  document.getElementById(`k${id}_power`).innerText = m.power ? Number(m.power).toFixed(1) : "--";
-
+ // document.getElementById(`k${id}_best`).innerText = m.best ? Number(m.best).toFixed(1) : "--";
+  document.getElementById(`k${id}_best`).innerText = m.best ? (Number(m.best) / 1e9).toFixed(2) : "--";
   // Core voltage
 let core = "--";
 if (m.coreVoltage) {
