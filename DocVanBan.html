@@ -3,9 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trình Đọc Văn Bản AI - Miễn Phí & Không Giới Hạn</title>
+    <title>Trình Đọc Văn Bản AI - Giữ Sáng Màn Hình</title>
     <style>
-        /* CSS Thuần 100% - Tối ưu Mobile-First & WebView */
+        /* CSS Thuần 100% - Hỗ trợ Sáng/Tối & Mobile-First */
+        :root {
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-input: #f8fafc;
+            --text-main: #0f172a;
+            --text-sub: #475569;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --border-input: #cbd5e1;
+            --primary: #2563eb;
+            --primary-soft: #eff6ff;
+            --primary-border: #bfdbfe;
+            --shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+        }
+
+        body.dark {
+            --bg-body: #0b1120;
+            --bg-card: #1e293b;
+            --bg-input: #0f172a;
+            --text-main: #f8fafc;
+            --text-sub: #cbd5e1;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --border-input: #475569;
+            --primary: #3b82f6;
+            --primary-soft: rgba(59, 130, 246, 0.16);
+            --primary-border: rgba(59, 130, 246, 0.35);
+            --shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -15,11 +45,12 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f1f5f9;
-            color: #1e293b;
+            background-color: var(--bg-body);
+            color: var(--text-main);
             font-size: 15px;
             line-height: 1.5;
             padding: 12px;
+            transition: background-color 0.2s, color 0.2s;
         }
 
         .container {
@@ -27,17 +58,16 @@
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 14px;
-            padding-bottom: 32px;
+            gap: 12px;
+            padding-bottom: 36px;
         }
 
-        /* Thẻ Card chung */
         .card {
-            background-color: #ffffff;
+            background-color: var(--bg-card);
             border-radius: 14px;
-            padding: 16px;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-            border: 1px solid #e2e8f0;
+            padding: 15px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
         }
 
         /* Header */
@@ -45,14 +75,14 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
         }
 
         .header-title {
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 700;
-            color: #0f172a;
+            color: var(--text-main);
             display: flex;
             align-items: center;
             gap: 6px;
@@ -60,14 +90,20 @@
 
         .badge {
             font-size: 11px;
-            font-weight: 600;
-            background-color: #dbeafe;
-            color: #1d4ed8;
+            font-weight: 700;
+            background-color: var(--primary-soft);
+            color: var(--primary);
             padding: 2px 8px;
             border-radius: 99px;
         }
 
-        /* Hệ thống Nút bấm */
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Nút bấm */
         button {
             font-family: inherit;
             font-size: 14px;
@@ -78,13 +114,13 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 5px;
             transition: opacity 0.15s, transform 0.1s;
-            padding: 10px 14px;
+            padding: 9px 12px;
         }
 
         button:active:not(:disabled) {
-            transform: scale(0.98);
+            transform: scale(0.97);
         }
 
         button:disabled {
@@ -93,10 +129,18 @@
         }
 
         .btn-download {
-            background-color: #eff6ff;
-            color: #2563eb;
-            border: 1px solid #bfdbfe;
-            padding: 8px 12px;
+            background-color: var(--primary-soft);
+            color: var(--primary);
+            border: 1px solid var(--primary-border);
+            padding: 7px 11px;
+            font-size: 13px;
+        }
+
+        .btn-theme {
+            background-color: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border-input);
+            padding: 7px 10px;
             font-size: 13px;
         }
 
@@ -112,7 +156,7 @@
             background-color: #f59e0b;
             color: #ffffff;
             flex: 1;
-            padding: 13px 12px;
+            padding: 13px 10px;
             font-size: 14px;
         }
 
@@ -120,56 +164,148 @@
             background-color: #ef4444;
             color: #ffffff;
             flex: 1;
-            padding: 13px 12px;
+            padding: 13px 10px;
             font-size: 14px;
         }
 
         .btn-secondary {
-            background-color: #f8fafc;
-            color: #475569;
-            border: 1px solid #cbd5e1;
-            padding: 6px 10px;
-            font-size: 13px;
+            background-color: var(--bg-input);
+            color: var(--text-sub);
+            border: 1px solid var(--border-input);
+            padding: 5px 10px;
+            font-size: 12.5px;
             border-radius: 8px;
         }
 
-        /* Khu vực nhập văn bản */
+        /* Khu vực nhập liệu */
         .editor-toolbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 10px;
             gap: 8px;
+            flex-wrap: wrap;
         }
 
         .char-counter {
             font-size: 13px;
-            color: #64748b;
+            color: var(--text-muted);
             font-weight: 500;
         }
 
         textarea {
             width: 100%;
-            min-height: 170px;
+            min-height: 165px;
             padding: 12px;
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--border-input);
             border-radius: 10px;
             font-family: inherit;
             font-size: 15px;
             line-height: 1.6;
-            color: #0f172a;
-            background-color: #f8fafc;
+            color: var(--text-main);
+            background-color: var(--bg-input);
             resize: vertical;
             outline: none;
         }
 
         textarea:focus {
-            border-color: #2563eb;
-            background-color: #ffffff;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
         }
 
-        /* Khu vực điều khiển phát */
+        /* Thanh công tắc Giữ sáng màn hình (Wake Lock) */
+        .wakelock-bar {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .toggle-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            user-select: none;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background-color: #cbd5e1;
+            border-radius: 99px;
+            transition: background-color 0.2s;
+        }
+
+        body.dark .toggle-slider {
+            background-color: #475569;
+        }
+
+        .toggle-slider::before {
+            content: "";
+            position: absolute;
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            transition: transform 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #16a34a;
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(20px);
+        }
+
+        .wakelock-badge {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 99px;
+            background-color: var(--bg-input);
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+        }
+
+        .wakelock-badge.active {
+            background-color: #dcfce7;
+            color: #15803d;
+            border-color: #86efac;
+        }
+
+        body.dark .wakelock-badge.active {
+            background-color: rgba(22, 163, 74, 0.22);
+            color: #4ade80;
+            border-color: rgba(74, 222, 128, 0.35);
+        }
+
+        /* Điều khiển phát */
         .controls-row {
             display: flex;
             gap: 8px;
@@ -183,18 +319,18 @@
             align-items: center;
             font-size: 13px;
             font-weight: 600;
-            color: #475569;
+            color: var(--text-sub);
             margin-bottom: 8px;
         }
 
         .status-badge {
-            color: #2563eb;
+            color: var(--primary);
         }
 
         .progress-track {
             width: 100%;
             height: 8px;
-            background-color: #e2e8f0;
+            background-color: var(--border-color);
             border-radius: 99px;
             overflow: hidden;
             margin-bottom: 10px;
@@ -209,12 +345,12 @@
         }
 
         .current-sentence {
-            background-color: #f8fafc;
+            background-color: var(--bg-input);
             border-left: 3px solid #2563eb;
             padding: 10px 12px;
             border-radius: 6px;
             font-size: 14px;
-            color: #334155;
+            color: var(--text-sub);
             min-height: 44px;
             font-style: italic;
         }
@@ -235,12 +371,12 @@
             margin-bottom: 6px;
             font-size: 14px;
             font-weight: 600;
-            color: #334155;
+            color: var(--text-main);
         }
 
         .value-pill {
-            background-color: #eff6ff;
-            color: #2563eb;
+            background-color: var(--primary-soft);
+            color: var(--primary);
             padding: 2px 8px;
             border-radius: 6px;
             font-size: 13px;
@@ -251,16 +387,16 @@
             width: 100%;
             padding: 10px 12px;
             border-radius: 10px;
-            border: 1px solid #cbd5e1;
-            background-color: #f8fafc;
+            border: 1px solid var(--border-input);
+            background-color: var(--bg-input);
             font-family: inherit;
             font-size: 14px;
-            color: #0f172a;
+            color: var(--text-main);
             outline: none;
         }
 
         select:focus {
-            border-color: #2563eb;
+            border-color: var(--primary);
         }
 
         input[type="range"] {
@@ -274,23 +410,23 @@
             display: flex;
             justify-content: space-between;
             font-size: 12px;
-            color: #94a3b8;
+            color: var(--text-muted);
             margin-top: 4px;
         }
 
         .hint-text {
             font-size: 12.5px;
-            color: #64748b;
+            color: var(--text-muted);
             margin-top: 6px;
         }
 
-        /* Hộp thông báo cảnh báo / hướng dẫn */
+        /* Hộp thông báo */
         .notice-box {
             background-color: #fffbeb;
             border: 1px solid #fde68a;
             color: #92400e;
             border-radius: 12px;
-            padding: 12px 14px;
+            padding: 11px 14px;
             font-size: 13px;
             line-height: 1.5;
         }
@@ -299,10 +435,6 @@
             background-color: #fef2f2;
             border-color: #fecaca;
             color: #991b1b;
-        }
-
-        .notice-box strong {
-            font-weight: 700;
         }
 
         .hidden {
@@ -315,19 +447,24 @@
         <!-- 1. HEADER -->
         <header class="card header">
             <div class="header-title">
-                <span>🔊 Trình Đọc Văn Bản AI</span>
+                <span>🔊 Trình Đọc Văn Bản</span>
                 <span class="badge">Free 100%</span>
             </div>
-            <button type="button" id="downloadBtn" class="btn-download">📥 Tải file HTML</button>
+            <div class="header-actions">
+                <button type="button" id="themeBtn" class="btn-theme" title="Đổi giao diện Sáng/Tối">🌙 Tối</button>
+                <button type="button" id="downloadBtn" class="btn-download">📥 Tải HTML</button>
+            </div>
         </header>
 
-        <!-- Hộp thông báo trạng thái hệ thống / WebView -->
+        <!-- Hộp thông báo hệ thống -->
         <div id="alertBox" class="notice-box hidden"></div>
 
         <!-- 2. KHUNG NHẬP VĂN BẢN -->
         <section class="card">
             <div class="editor-toolbar">
-                <span class="char-counter">Độ dài: <strong id="charCount">0</strong> ký tự</span>
+                <span class="char-counter">
+                    <strong id="charCount">0</strong> ký tự · <strong id="wordCount">0</strong> từ
+                </span>
                 <div style="display: flex; gap: 6px;">
                     <button type="button" id="sampleBtn" class="btn-secondary">📄 Mẫu</button>
                     <button type="button" id="clearBtn" class="btn-secondary">🗑️ Xóa</button>
@@ -336,16 +473,27 @@
             <textarea id="textInput" placeholder="Nhập hoặc dán đoạn văn bản tiếng Việt bất kỳ vào đây..."></textarea>
         </section>
 
-        <!-- 3. KHU VỰC ĐIỀU KHIỂN PHÁT -->
+        <!-- 3. ĐIỀU KHIỂN PHÁT & GIỮ SÁNG MÀN HÌNH -->
         <section class="card">
             <div class="controls-row">
                 <button type="button" id="playBtn" class="btn-primary">▶ Đọc ngay</button>
                 <button type="button" id="pauseBtn" class="btn-warning" disabled>⏸ Tạm dừng</button>
                 <button type="button" id="stopBtn" class="btn-danger" disabled>⏹ Dừng</button>
             </div>
+
+            <div class="wakelock-bar">
+                <label class="toggle-label" for="wakeLockToggle">
+                    <span class="toggle-switch">
+                        <input type="checkbox" id="wakeLockToggle" checked>
+                        <span class="toggle-slider"></span>
+                    </span>
+                    <span>Giữ sáng màn hình khi đọc</span>
+                </label>
+                <span id="wakeLockStatus" class="wakelock-badge">Sẵn sàng giữ sáng</span>
+            </div>
         </section>
 
-        <!-- 4. KHUNG TRẠNG THÁI & THANH TIẾN ĐỘ -->
+        <!-- 4. TRẠNG THÁI & TIẾN ĐỘ -->
         <section class="card">
             <div class="status-header">
                 <span>Trạng thái: <span id="statusLabel" class="status-badge">Sẵn sàng</span></span>
@@ -370,7 +518,7 @@
                     <option value="DEFAULT_VI">🇻🇳 Giọng mặc định Tiếng Việt (vi-VN)</option>
                 </select>
                 <p id="voiceHint" class="hint-text">
-                    Mẹo: Mở file bằng trình duyệt <strong>Google Chrome</strong> hoặc <strong>Microsoft Edge</strong> để có giọng đọc tự nhiên nhất.
+                    Mẹo: Mở file bằng trình duyệt <strong>Google Chrome</strong> hoặc <strong>Microsoft Edge</strong> để có giọng đọc tự nhiên và hỗ trợ giữ sáng màn hình tốt nhất.
                 </p>
             </div>
 
@@ -399,30 +547,48 @@
                     <span>1.5 (Bổng)</span>
                 </div>
             </div>
+
+            <div class="setting-group">
+                <div class="setting-label-row">
+                    <label for="volumeRange">Âm lượng</label>
+                    <span id="volumeVal" class="value-pill">100%</span>
+                </div>
+                <input type="range" id="volumeRange" min="0" max="1" step="0.05" value="1">
+                <div class="range-ticks">
+                    <span>0% (Tắt tiếng)</span>
+                    <span>50%</span>
+                    <span>100% (Tối đa)</span>
+                </div>
+            </div>
         </section>
     </div>
 
     <script>
-        // Giữ tham chiếu toàn cục chống trình duyệt tự động thu gom rác (Garbage Collection) giữa chừng
+        // Giữ tham chiếu toàn cục chống trình duyệt thu gom rác (Garbage Collection) giữa chừng
         window.currentUtterance = null;
 
         (function () {
-            const DEFAULT_SAMPLE = `Xin chào! Đây là trình đọc văn bản tiếng Việt hoàn toàn miễn phí và không giới hạn số lượng ký tự.
+            const DEFAULT_SAMPLE = `Xin chào! Đây là trình đọc văn bản tiếng Việt hoàn toàn miễn phí, không giới hạn số lượng ký tự và hỗ trợ giữ sáng màn hình tự động khi đang đọc.
 
-Đoạn thứ nhất: Giao diện này được xây dựng bằng mã HTML và CSS thuần 100%, giúp hiển thị gọn gàng, sắc nét trên mọi màn hình điện thoại mà không cần tải thư viện bên ngoài.
+Đoạn thứ nhất: Khi bạn bật công tắc "Giữ sáng màn hình khi đọc", trình duyệt sẽ duy trì màn hình luôn sáng trong suốt quá trình nghe truyện hoặc tài liệu dài, và tự động tắt giữ sáng khi đọc xong để tiết kiệm pin.
 
-Đoạn thứ hai: Văn bản dài sẽ được tự động tách thành các câu ngắn dưới 175 ký tự, kết hợp bộ đếm giám sát thông minh để đọc xuyên suốt hàng chục trang mà không bao giờ bị dừng giữa chừng.`;
+Đoạn thứ hai: Văn bản dài được tự động chia nhỏ theo dấu câu dưới 175 ký tự, kết hợp khoảng nghỉ thông minh và bộ đếm giám sát giúp đọc liên tục hàng chục trang mà không bao giờ bị dừng giữa chừng.`;
 
             // DOM Elements
             const textInput = document.getElementById('textInput');
             const charCount = document.getElementById('charCount');
+            const wordCount = document.getElementById('wordCount');
             const sampleBtn = document.getElementById('sampleBtn');
             const clearBtn = document.getElementById('clearBtn');
             const downloadBtn = document.getElementById('downloadBtn');
+            const themeBtn = document.getElementById('themeBtn');
 
             const playBtn = document.getElementById('playBtn');
             const pauseBtn = document.getElementById('pauseBtn');
             const stopBtn = document.getElementById('stopBtn');
+
+            const wakeLockToggle = document.getElementById('wakeLockToggle');
+            const wakeLockStatus = document.getElementById('wakeLockStatus');
 
             const statusLabel = document.getElementById('statusLabel');
             const progressLabel = document.getElementById('progressLabel');
@@ -437,13 +603,17 @@
             const rateVal = document.getElementById('rateVal');
             const pitchRange = document.getElementById('pitchRange');
             const pitchVal = document.getElementById('pitchVal');
+            const volumeRange = document.getElementById('volumeRange');
+            const volumeVal = document.getElementById('volumeVal');
             const alertBox = document.getElementById('alertBox');
 
-            // Kiểm tra hỗ trợ Web Speech API
+            // Kiểm tra hỗ trợ Web Speech API & Screen Wake Lock API
             const isSpeechSupported = ('speechSynthesis' in window) && ('SpeechSynthesisUtterance' in window);
             const synth = isSpeechSupported ? window.speechSynthesis : null;
+            const isWakeLockSupported = ('wakeLock' in navigator);
 
-            // State quản lý đọc
+            // State quản lý đọc & Wake Lock
+            let wakeLockSentinel = null;
             let availableVoices = [];
             let chunks = [];
             let currentIndex = 0;
@@ -454,6 +624,94 @@
             let watchdogTimer = null;
             let voicePollInterval = null;
             let sessionId = 0;
+
+            // --- QUẢN LÝ SCREEN WAKE LOCK API ---
+            function updateWakeLockBadge(state) {
+                wakeLockStatus.classList.remove('active');
+                if (state === 'active') {
+                    wakeLockStatus.textContent = '💡 Đang giữ sáng màn hình';
+                    wakeLockStatus.classList.add('active');
+                } else if (state === 'off') {
+                    wakeLockStatus.textContent = 'Đã tắt giữ sáng';
+                } else if (state === 'unsupported') {
+                    wakeLockStatus.textContent = 'Thiết bị không hỗ trợ';
+                } else {
+                    wakeLockStatus.textContent = 'Sẵn sàng giữ sáng';
+                }
+            }
+
+            if (!isWakeLockSupported) {
+                updateWakeLockBadge('unsupported');
+            }
+
+            async function requestWakeLock() {
+                if (!wakeLockToggle.checked) {
+                    updateWakeLockBadge('off');
+                    return;
+                }
+                if (!isWakeLockSupported) {
+                    updateWakeLockBadge('unsupported');
+                    return;
+                }
+                if (wakeLockSentinel !== null) {
+                    updateWakeLockBadge('active');
+                    return;
+                }
+
+                try {
+                    wakeLockSentinel = await navigator.wakeLock.request('screen');
+                    updateWakeLockBadge('active');
+
+                    wakeLockSentinel.addEventListener('release', () => {
+                        wakeLockSentinel = null;
+                        if (!isPlaying || isPaused || !wakeLockToggle.checked) {
+                            updateWakeLockBadge(wakeLockToggle.checked ? 'ready' : 'off');
+                        }
+                    });
+                } catch (err) {
+                    // Bỏ qua an toàn nếu WebView chặn hoặc thiết bị đang bật chế độ Siêu tiết kiệm pin
+                    wakeLockSentinel = null;
+                    updateWakeLockBadge('ready');
+                }
+            }
+
+            async function releaseWakeLock() {
+                if (wakeLockSentinel !== null) {
+                    try {
+                        await wakeLockSentinel.release();
+                    } catch (e) {}
+                    wakeLockSentinel = null;
+                }
+                if (isWakeLockSupported) {
+                    updateWakeLockBadge(wakeLockToggle.checked ? 'ready' : 'off');
+                }
+            }
+
+            // Lắng nghe sự kiện người dùng bật/tắt công tắc giữ sáng ngay khi đang đọc
+            wakeLockToggle.addEventListener('change', () => {
+                if (wakeLockToggle.checked) {
+                    if (isPlaying && !isPaused) {
+                        requestWakeLock();
+                    } else if (isWakeLockSupported) {
+                        updateWakeLockBadge('ready');
+                    }
+                } else {
+                    releaseWakeLock();
+                }
+            });
+
+            // Xin cấp lại Wake Lock khi người dùng chuyển sang app khác rồi quay lại trình duyệt trong lúc đang đọc
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && isPlaying && !isPaused && wakeLockToggle.checked) {
+                    requestWakeLock();
+                }
+            });
+
+            // --- GIAO DIỆN SÁNG / TỐI ---
+            themeBtn.addEventListener('click', () => {
+                const isDark = document.body.classList.toggle('dark');
+                themeBtn.textContent = isDark ? '☀️ Sáng' : '🌙 Tối';
+            });
 
             function showAlert(htmlMessage, isError) {
                 alertBox.innerHTML = htmlMessage;
@@ -466,18 +724,21 @@
             }
 
             if (!isSpeechSupported) {
-                showAlert('⚠️ <strong>Trình duyệt không hỗ trợ phát âm thanh:</strong> Khung xem trước (WebView) hiện tại đang khóa tính năng đọc giọng nói. Hãy bấm <strong>"📥 Tải file HTML"</strong> ở trên rồi mở file bằng <strong>Google Chrome</strong> hoặc <strong>Microsoft Edge</strong> để nghe trực tiếp!', true);
+                showAlert('⚠️ <strong>Trình duyệt không hỗ trợ phát âm thanh:</strong> Khung xem trước hiện tại đang khóa tính năng đọc giọng nói. Hãy bấm <strong>"📥 Tải HTML"</strong> ở trên rồi mở file bằng <strong>Google Chrome</strong> hoặc <strong>Microsoft Edge</strong> để nghe trực tiếp!', true);
             }
 
-            // Khởi tạo dữ liệu mẫu & đếm ký tự
+            // Khởi tạo văn bản mẫu & đếm ký tự/từ
             textInput.value = DEFAULT_SAMPLE;
-            function updateCharCounter() {
-                charCount.textContent = textInput.value.length.toLocaleString('vi-VN');
+            function updateCounters() {
+                const val = textInput.value;
+                charCount.textContent = val.length.toLocaleString('vi-VN');
+                const words = val.trim() ? val.trim().split(/\s+/).length : 0;
+                wordCount.textContent = words.toLocaleString('vi-VN');
             }
-            updateCharCounter();
-            textInput.addEventListener('input', updateCharCounter);
+            updateCounters();
+            textInput.addEventListener('input', updateCounters);
 
-            // Tải và cập nhật danh sách giọng đọc (Polling mỗi 250ms)
+            // --- TẢI DANH SÁCH GIỌNG ĐỌC ---
             function populateVoices(list) {
                 const previousVal = voiceSelect.value;
                 voiceSelect.innerHTML = '';
@@ -569,7 +830,7 @@
                         voicePollInterval = null;
                         populateVoices([]);
                         if (manualTrigger) {
-                            showAlert('💡 <strong>Lưu ý trên WebView:</strong> Khung xem trước trong ứng dụng này hạn chế truy cập danh sách giọng. Nếu bấm <strong>"▶ Đọc ngay"</strong> chưa nghe thấy tiếng, bạn hãy bấm <strong>"📥 Tải file HTML"</strong> và mở bằng trình duyệt <strong>Google Chrome</strong> hoặc <strong>Edge</strong>.', false);
+                            showAlert('💡 <strong>Lưu ý trên WebView:</strong> Khung xem trước trong ứng dụng này hạn chế truy cập danh sách giọng. Nếu bấm <strong>"▶ Đọc ngay"</strong> chưa nghe thấy tiếng, hãy bấm <strong>"📥 Tải HTML"</strong> và mở bằng trình duyệt <strong>Google Chrome</strong> hoặc <strong>Edge</strong>.', false);
                         }
                     }
                 }, 250);
@@ -595,8 +856,11 @@
             pitchRange.addEventListener('input', () => {
                 pitchVal.textContent = parseFloat(pitchRange.value).toFixed(1);
             });
+            volumeRange.addEventListener('input', () => {
+                volumeVal.textContent = Math.round(parseFloat(volumeRange.value) * 100) + '%';
+            });
 
-            // Tách văn bản dài thành các câu ngắn < 175 ký tự
+            // --- TÁCH CÂU NGẮN & ĐỌC LIÊN TỤC ---
             function splitIntoShortChunks(text) {
                 const maxLen = 175;
                 const paragraphs = text.split(/\n+/);
@@ -717,7 +981,7 @@
                 const rate = parseFloat(rateRange.value) || 1.0;
                 utter.rate = rate;
                 utter.pitch = parseFloat(pitchRange.value) || 1.0;
-                utter.volume = 1.0;
+                utter.volume = parseFloat(volumeRange.value);
 
                 // Cập nhật thanh tiến độ & câu hiện tại
                 const step = currentIndex + 1;
@@ -742,7 +1006,7 @@
                     chunkCompleted = true;
 
                     if (code === 'not-allowed' || code === 'synthesis-failed') {
-                        showAlert('⚠️ <strong>Trình duyệt WebView chặn quyền phát âm thanh:</strong> Ứng dụng hiện tại không cho phép trang web phát giọng nói. Hãy bấm <strong>"📥 Tải file HTML"</strong> ở góc trên bên phải, sau đó mở file đã tải bằng <strong>Google Chrome</strong> hoặc <strong>Microsoft Edge</strong> để nghe bình thường!', true);
+                        showAlert('⚠️ <strong>Trình duyệt WebView chặn quyền phát âm thanh:</strong> Ứng dụng hiện tại không cho phép trang web phát giọng nói. Hãy bấm <strong>"📥 Tải HTML"</strong> ở góc trên bên phải, sau đó mở file đã tải bằng <strong>Google Chrome</strong> hoặc <strong>Microsoft Edge</strong> để nghe bình thường!', true);
                         stopReading(false);
                         return;
                     }
@@ -765,10 +1029,9 @@
                     if (synth.paused) synth.resume();
                     synth.speak(utter);
 
-                    // Kiểm tra nhanh sau 600ms xem WebView có âm thầm chặn phát âm thanh không
                     setTimeout(() => {
                         if (activeSession === sessionId && isPlaying && !isPaused && !chunkCompleted && !synth.speaking && !synth.pending) {
-                            showAlert('💡 <strong>Không nghe thấy tiếng?</strong> Trình duyệt xem trước trên điện thoại thường chặn tính năng đọc văn bản. Bạn hãy bấm <strong>"📥 Tải file HTML"</strong> ở trên cùng và mở file bằng <strong>Google Chrome</strong> hoặc <strong>Microsoft Edge</strong> nhé!', false);
+                            showAlert('💡 <strong>Không nghe thấy tiếng?</strong> Trình duyệt xem trước trên điện thoại thường chặn tính năng đọc văn bản. Bạn hãy bấm <strong>"📥 Tải HTML"</strong> ở trên cùng và mở file bằng <strong>Google Chrome</strong> hoặc <strong>Microsoft Edge</strong> nhé!', false);
                         }
                     }, 600);
                 } catch (e) {
@@ -783,9 +1046,11 @@
                     return;
                 }
 
+                // Tiếp tục khi đang tạm dừng
                 if (isPlaying && isPaused) {
                     isPaused = false;
                     setControlsState('playing');
+                    requestWakeLock();
                     synth.resume();
                     setTimeout(() => {
                         if (isPlaying && !isPaused && !synth.speaking) {
@@ -816,8 +1081,8 @@
                 isPlaying = true;
                 isPaused = false;
                 setControlsState('playing');
+                requestWakeLock();
 
-                // Khoảng nghỉ 60ms sau cancel() để tránh trình duyệt nuốt lệnh speak()
                 setTimeout(() => {
                     manualStop = false;
                     speakChunk(activeSession);
@@ -830,6 +1095,7 @@
                 isPaused = true;
                 synth.pause();
                 setControlsState('paused');
+                releaseWakeLock();
             }
 
             function stopReading(finishedAll) {
@@ -841,6 +1107,7 @@
                 window.currentUtterance = null;
                 if (synth) synth.cancel();
                 setControlsState('idle');
+                releaseWakeLock();
 
                 if (finishedAll) {
                     statusLabel.textContent = '✅ Đã đọc xong!';
@@ -865,18 +1132,18 @@
             sampleBtn.addEventListener('click', () => {
                 stopReading(false);
                 textInput.value = DEFAULT_SAMPLE;
-                updateCharCounter();
+                updateCounters();
                 hideAlert();
             });
 
             clearBtn.addEventListener('click', () => {
                 stopReading(false);
                 textInput.value = '';
-                updateCharCounter();
+                updateCounters();
                 textInput.focus();
             });
 
-            // Tải chính file HTML hiện tại về máy bằng Blob
+            // Tải file HTML trực tiếp bằng Blob
             downloadBtn.addEventListener('click', () => {
                 try {
                     const fullHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
@@ -889,7 +1156,7 @@
                     link.click();
                     document.body.removeChild(link);
                     URL.revokeObjectURL(url);
-                    showAlert('✅ <strong>Đang tải file xuống!</strong> Sau khi tải xong, bạn hãy mở file <code>Trinh_Doc_Van_Ban_AI.html</code> bằng trình duyệt <strong>Google Chrome</strong> hoặc <strong>Microsoft Edge</strong> để sử dụng đầy đủ giọng đọc tiếng Việt.', false);
+                    showAlert('✅ <strong>Đang tải file xuống!</strong> Sau khi tải xong, bạn hãy mở file <code>Trinh_Doc_Van_Ban_AI.html</code> bằng trình duyệt <strong>Google Chrome</strong> hoặc <strong>Microsoft Edge</strong> để sử dụng đầy đủ giọng đọc tiếng Việt và giữ sáng màn hình.', false);
                 } catch (err) {
                     showAlert('⚠️ Trình duyệt xem trước chặn tải trực tiếp. Bạn có thể chuyển sang tab <strong>Mã</strong>, sao chép toàn bộ nội dung và lưu thành file <code>doc-van-ban.html</code>.', false);
                 }
@@ -897,6 +1164,7 @@
 
             window.addEventListener('beforeunload', () => {
                 manualStop = true;
+                releaseWakeLock();
                 if (synth) synth.cancel();
             });
         })();
